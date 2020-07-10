@@ -11,8 +11,6 @@ namespace Cmd
     {
         static async Task Main(string[] _)
         {
-            const string KeyVaultUrl = "";
-            // DefaultEndpointsProtocol=https;AccountName=maps0pwe0sa;AccountKey=uyScwXrpp4+a/qYzfNvURt6QOhrBKq3vo+KawHiSohVgd8mMN2N8uLmbdyhhslr5A7citn00QADZEFaAWFIIeA==;EndpointSuffix=core.windows.net
             var services = BuildServiceProvider();
             var agents = services.GetRequiredService<IMapAgentLogic>();
             await agents.UpdateAgent("1", AgentCommand.Continue);

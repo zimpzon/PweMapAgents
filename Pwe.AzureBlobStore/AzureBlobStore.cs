@@ -1,6 +1,7 @@
 ﻿using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
 using Microsoft.Azure.Storage.RetryPolicies;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,8 +19,10 @@ namespace Pwe.AzureBloBStore
         private readonly CloudBlobClient _client;
         private readonly CloudBlobContainer _container;
 
-        public AzureBlobStoreService(string connectionString)
+        public AzureBlobStoreService(IConfiguration config)
         {
+            string connectionString = config["BlobConnectionString"];
+
             if (!CloudStorageAccount.TryParse(connectionString, out _account))
                 throw new ArgumentException($"Could not parse connection string");
 
