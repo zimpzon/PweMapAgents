@@ -1,0 +1,61 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmd", "Cmd\Cmd.csproj", "{2744D3AF-A9DF-4035-A20E-DF32E199B45B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.OverpassTiles", "pwe.OverpassTiles\Pwe.OverpassTiles.csproj", "{896194DD-2C9C-4970-9B68-047D4D86D8A3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.TileUtil", "Pwe.TileUtil\Pwe.TileUtil.csproj", "{2340C5DB-E365-453D-9DC0-31303FAEB1BB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.GeoJson", "Pwe.GeoJson\Pwe.GeoJson.csproj", "{302A552B-F8EA-4B86-BDF6-8B35BF4071F5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.MapAgents", "Pwe.MapAgents\Pwe.MapAgents.csproj", "{9FEAD5C6-2DAE-4D4E-B19E-FD589BA920FF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.World", "Pwe.World\Pwe.World.csproj", "{54A968E9-BB84-495B-AAF5-E32F957879B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.AzureBlobStore", "Pwe.AzureBloBStore\Pwe.AzureBlobStore.csproj", "{4A6FDA1E-AE40-44F2-A839-942D2C8539AB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2744D3AF-A9DF-4035-A20E-DF32E199B45B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2744D3AF-A9DF-4035-A20E-DF32E199B45B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2744D3AF-A9DF-4035-A20E-DF32E199B45B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2744D3AF-A9DF-4035-A20E-DF32E199B45B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{896194DD-2C9C-4970-9B68-047D4D86D8A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{896194DD-2C9C-4970-9B68-047D4D86D8A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{896194DD-2C9C-4970-9B68-047D4D86D8A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{896194DD-2C9C-4970-9B68-047D4D86D8A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2340C5DB-E365-453D-9DC0-31303FAEB1BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2340C5DB-E365-453D-9DC0-31303FAEB1BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2340C5DB-E365-453D-9DC0-31303FAEB1BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2340C5DB-E365-453D-9DC0-31303FAEB1BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{302A552B-F8EA-4B86-BDF6-8B35BF4071F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{302A552B-F8EA-4B86-BDF6-8B35BF4071F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{302A552B-F8EA-4B86-BDF6-8B35BF4071F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{302A552B-F8EA-4B86-BDF6-8B35BF4071F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FEAD5C6-2DAE-4D4E-B19E-FD589BA920FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FEAD5C6-2DAE-4D4E-B19E-FD589BA920FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FEAD5C6-2DAE-4D4E-B19E-FD589BA920FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FEAD5C6-2DAE-4D4E-B19E-FD589BA920FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54A968E9-BB84-495B-AAF5-E32F957879B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54A968E9-BB84-495B-AAF5-E32F957879B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54A968E9-BB84-495B-AAF5-E32F957879B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54A968E9-BB84-495B-AAF5-E32F957879B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A6FDA1E-AE40-44F2-A839-942D2C8539AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A6FDA1E-AE40-44F2-A839-942D2C8539AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A6FDA1E-AE40-44F2-A839-942D2C8539AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A6FDA1E-AE40-44F2-A839-942D2C8539AB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {30F89810-EAD6-473B-AF6F-30EDA734534B}
+	EndGlobalSection
+EndGlobal

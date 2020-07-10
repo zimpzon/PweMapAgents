@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
+    <ProjectReference Include="..\Pwe.TileUtil\Pwe.TileUtil.csproj" />
+  </ItemGroup>
+
+</Project>
