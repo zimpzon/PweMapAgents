@@ -12,20 +12,16 @@ namespace Pwe.AzureBloBStore
 {
     public class AzureBlobStoreService : IBlobStoreService
     {
-        public const string ContainerName = "pinfo-store-v1";
+        public const string ContainerName = "Maps";
 
-        CloudStorageAccount _account;
-        CloudBlobClient _client;
-        CloudBlobContainer _container;
-        BlobContainerPermissions _permissions;
+        private readonly CloudStorageAccount _account;
+        private readonly CloudBlobClient _client;
+        private readonly CloudBlobContainer _container;
 
-        public AzureBlobStoreService(ISecretSettingsService secretSettings)
+        public AzureBlobStoreService(string connectionString)
         {
-            System.Configuration.
-            string connectionString = secretSettings.GetSecret(SecretSettingsKeys.BlobStoreConnectionString);
-
             if (!CloudStorageAccount.TryParse(connectionString, out _account))
-                throw new ArgumentException($"Could not parse connection string. Please verify secret setting {nameof(SecretSettingsKeys.BlobStoreConnectionString)}");
+                throw new ArgumentException($"Could not parse connection string");
 
             _client = _account.CreateCloudBlobClient();
             _client.DefaultRequestOptions = new BlobRequestOptions
@@ -38,7 +34,13 @@ namespace Pwe.AzureBloBStore
             _container = _client.GetContainerReference(ContainerName);
         }
 
-        public async Task<bool> DeleteBlobAsync(string path)
+        public async Task<bool> Exists(string path)
+        {
+            CloudBlockBlob blockBlob = _container.GetBlockBlobReference(path);
+            return await blockBlob.ExistsAsync();
+        }
+
+        public async Task<bool> Delete(string path)
         {
             CloudBlockBlob blockBlob = _container.GetBlockBlobReference(path);
             return await blockBlob.DeleteIfExistsAsync();
@@ -48,6 +50,20 @@ namespace Pwe.AzureBloBStore
         {
             var bytes = await InternalGetBlobAsync(path);
             return Encoding.UTF8.GetString(bytes);
+        }
+
+        public async Task StoreText(string path, string text, bool overwriteExisting = true)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            await InternalStoreBlobAsync(path, bytes, overwriteExisting);
+        }
+
+        public async Task<IEnumerable<string>> GetBlobsInFolder(string path, bool includeSubfolders = false, bool returnFullPath = false)
+        {
+            CloudBlobDirectory directory = _container.GetDirectoryReference(path);
+            var blobs = directory.ListBlobs(useFlatBlobListing: includeSubfolders).OfType<CloudBlockBlob>().Cast<CloudBlockBlob>().ToList();
+            var names = blobs.Select(b => returnFullPath ? b.Name : GetSubfoldersAndFilenameFromFullPath(path, b.Name));
+            return await Task.FromResult(names);
         }
 
         async Task<byte[]> InternalGetBlobAsync(string path)
@@ -65,12 +81,6 @@ namespace Pwe.AzureBloBStore
             }
         }
 
-        public async Task StoreTextBlob(string path, string text, bool overwriteExisting = true)
-        {
-            var bytes = Encoding.UTF8.GetBytes(text);
-            await InternalStoreBlobAsync(path, bytes, overwriteExisting);
-        }
-
         async Task InternalStoreBlobAsync(string path, byte[] bytes, bool overwriteExisting = true)
         {
             CloudBlockBlob blockBlob = _container.GetBlockBlobReference(path);
@@ -78,12 +88,6 @@ namespace Pwe.AzureBloBStore
                 throw new ArgumentException($"Path already exists: {path}");
 
             await blockBlob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
-        }
-
-        public async Task<bool> BlobExistsAsync(string path)
-        {
-            CloudBlockBlob blockBlob = _container.GetBlockBlobReference(path);
-            return await blockBlob.ExistsAsync();
         }
 
         /// <summary>
@@ -95,14 +99,6 @@ namespace Pwe.AzureBloBStore
         {
             int rootIdx = fullPath.IndexOf(rootPath);
             return fullPath.Substring(rootIdx + rootPath.Length);
-        }
-
-        public async Task<IEnumerable<string>> GetBlobsInFolder(string path, bool includeSubfolders = false, bool returnFullPath = false)
-        {
-            CloudBlobDirectory directory = _container.GetDirectoryReference(path);
-            var blobs = directory.ListBlobs(useFlatBlobListing: includeSubfolders).OfType<CloudBlockBlob>().Cast<CloudBlockBlob>().ToList();
-            var names = blobs.Select(b => returnFullPath ? b.Name : GetSubfoldersAndFilenameFromFullPath(path, b.Name));
-            return await Task.FromResult(names);
         }
     }
 }
