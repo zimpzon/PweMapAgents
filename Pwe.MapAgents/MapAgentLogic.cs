@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Pwe.AzureBloBStore;
 using Pwe.World;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Pwe.MapAgents
@@ -9,16 +11,44 @@ namespace Pwe.MapAgents
     {
         private readonly ILogger _logger;
         private readonly IWorldGraph _worldGraph;
+        private readonly IBlobStoreService _blobStoreService;
+        private readonly Random _rnd = new Random();
 
-        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph)
+        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph, IBlobStoreService blobStoreService)
         {
             _logger = logger;
             _worldGraph = worldGraph;
+            _blobStoreService = blobStoreService;
         }
+
+        //var ag = new MapAgent
+        //{
+        //    Id = "1",
+        //    Name = "Fætter Guf",
+        //    StartLon = 12.568264,
+        //    StartLat = 55.675745,
+        //    StartTimeUtc = DateTime.UtcNow,
+        //};
+        //ag.Lon = ag.StartLon;
+        //ag.Lat = ag.StartLat;
+        //await _blobStoreService.StoreText($"agents/1", JsonSerializer.Serialize(ag));
 
         public async Task UpdateAgent(string id, AgentCommand command)
         {
-            var rnd = new Random();
+            string agentJson = await _blobStoreService.GetText($"agents/{id}");
+            if (string.IsNullOrWhiteSpace(agentJson))
+                throw new ArgumentException($"Unknown agent: {id}");
+
+            var agent = JsonSerializer.Deserialize<MapAgent>(agentJson);
+            // Get current path
+            // If current path not empty 
+            //    Create new path from x% of the end of the old path (for smooth overlap in time)
+            //    Set current node to end of old path
+            // Else
+            //    Create new empty path
+            //    Set current node to agent start position (world.GetNearByNode)
+            // Move around and add to path.
+            // Store path.
         }
 
         //        var startNode = await world.GetNearbyNode(12.342, 55.6075);

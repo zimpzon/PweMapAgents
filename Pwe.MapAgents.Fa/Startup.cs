@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using Pwe.AzureBloBStore;
 using Pwe.OverpassTiles;
 using Pwe.World;
 
@@ -14,6 +15,7 @@ namespace Pwe.MapAgents.Fa
             builder.Services.AddTransient<IWorldGraph, WorldGraph>();
             builder.Services.AddTransient<IMapAgentLogic, MapAgentLogic>();
             builder.Services.AddTransient<IWayTileService, OverpassWayTileService>();
+            builder.Services.AddSingleton<IBlobStoreService, AzureBlobStoreService>();
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Pwe.AzureBloBStore
 {
-    internal interface IBlobStoreService
+    public interface IBlobStoreService
     {
         Task<bool> Exists(string path);
         Task<bool> Delete(string path);

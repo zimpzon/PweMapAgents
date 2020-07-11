@@ -13,7 +13,7 @@ namespace Pwe.AzureBloBStore
 {
     public class AzureBlobStoreService : IBlobStoreService
     {
-        public const string ContainerName = "Maps";
+        public const string ContainerName = "maps";
 
         private readonly CloudStorageAccount _account;
         private readonly CloudBlobClient _client;
@@ -22,7 +22,6 @@ namespace Pwe.AzureBloBStore
         public AzureBlobStoreService(IConfiguration config)
         {
             string connectionString = config["BlobConnectionString"];
-
             if (!CloudStorageAccount.TryParse(connectionString, out _account))
                 throw new ArgumentException($"Could not parse connection string");
 
