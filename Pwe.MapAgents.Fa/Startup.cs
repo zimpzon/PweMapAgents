@@ -11,11 +11,9 @@ namespace Pwe.MapAgents.Fa
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            //builder.Services.AddHttpClient();
-
-            builder.Services.AddSingleton<IWorldGraph, WorldGraph>();
-            builder.Services.AddSingleton<IMapAgentLogic, MapAgentLogic>();
-            builder.Services.AddSingleton<IWayTileService, OverpassWayTileService>();
+            builder.Services.AddTransient<IWorldGraph, WorldGraph>();
+            builder.Services.AddTransient<IMapAgentLogic, MapAgentLogic>();
+            builder.Services.AddTransient<IWayTileService, OverpassWayTileService>();
         }
     }
 }
