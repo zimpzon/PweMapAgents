@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Pwe.World;
+using System.Collections.Generic;
 
 namespace Pwe.MapAgents
 {
@@ -6,6 +7,6 @@ namespace Pwe.MapAgents
     {
         public long UnixMsStart { get; set; }
         public long UnixMsEnd { get; set; }
-        public List<double> Points { get; set; }
+        public List<GeoCoord> Points { get; set; } = new List<GeoCoord>();
     }
 }

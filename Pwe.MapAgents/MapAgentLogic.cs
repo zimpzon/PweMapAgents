@@ -35,11 +35,12 @@ namespace Pwe.MapAgents
 
         public async Task UpdateAgent(string id, AgentCommand command)
         {
-            string agentJson = await _blobStoreService.GetText($"agents/{id}");
+            string agentJson = await _blobStoreService.GetText($"agents/{id}.json");
             if (string.IsNullOrWhiteSpace(agentJson))
                 throw new ArgumentException($"Unknown agent: {id}");
 
             var agent = JsonSerializer.Deserialize<MapAgent>(agentJson);
+
             // Get current path
             // If current path not empty 
             //    Create new path from x% of the end of the old path (for smooth overlap in time)
@@ -49,6 +50,11 @@ namespace Pwe.MapAgents
             //    Set current node to agent start position (world.GetNearByNode)
             // Move around and add to path.
             // Store path.
+            string pathJson = await _blobStoreService.GetText($"agents/{id}-path.json");
+            var oldPath = string.IsNullOrWhiteSpace(pathJson) ? new MapAgentPath() : JsonSerializer.Deserialize<MapAgentPath>(pathJson);
+            var newPath = new MapAgentPath();
+            if (newPath.Points.Count == 0)
+                newPath.Points.Add(new GeoCoord(agent.StartLon, agent.StartLat));
         }
 
         //        var startNode = await world.GetNearbyNode(12.342, 55.6075);
