@@ -14,9 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pwe.AzureBloBStore\Pwe.AzureBlobStore.csproj" />
-    <ProjectReference Include="..\Pwe.GeoJson\Pwe.GeoJson.csproj" />
     <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
-    <ProjectReference Include="..\Pwe.TileUtil\Pwe.TileUtil.csproj" />
+    <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
     <ProjectReference Include="..\Pwe.World\Pwe.World.csproj" />
   </ItemGroup>
 

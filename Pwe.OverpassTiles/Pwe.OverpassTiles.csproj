@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Pwe.TileUtil\Pwe.TileUtil.csproj" />
+    <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
   </ItemGroup>
 
 </Project>

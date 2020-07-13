@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Pwe.TileUtil;
+using Pwe.Shared;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,22 +13,27 @@ namespace Pwe.OverpassTiles
 {
     public class OverpassWayTileService : IWayTileService
     {
+        const string UrlPrimary = "https://overpass.kumi.systems/api/interpreter";
+        const string UrlSecondary = "https://overpass-api.de/api/interpreter";
+
         static readonly NumberFormatInfo nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
         static string NumberStr(double d) => d.ToString(nfi);
         static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, WriteIndented = true, };
 
         private readonly ILogger _logger;
+        private string _currentUrl;
 
         public OverpassWayTileService(ILogger logger)
         {
             _logger = logger;
+            _currentUrl = UrlSecondary; // Primary fails today -  UrlPrimary;
         }
 
         public async Task<WayTile> GetTile(long tileId, int zoom)
         {
             var bbox = TileMath.GetTileBounds(tileId, zoom);
             string dbgMsg = $"TileId {tileId}, zoom: {zoom}, bbox: ({bbox.lon0}, {bbox.lat0}, {bbox.lon1}, {bbox.lat1})";
-            _logger.LogTrace($"Loading: {dbgMsg}");
+            _logger.LogInformation($"Loading: {dbgMsg}");
 
             // https://wiki.openstreetmap.org/wiki/Bounding_Box
             // The order of values in the bounding box used by Overpass API is (South, West, North, East):
@@ -37,33 +42,34 @@ namespace Pwe.OverpassTiles
             var client = new HttpClient();
             var content = new StringContent(cmd);
             OsmResponse osmResponse = null;
-            int retriesLeft = 3;
             string body = "";
             HttpResponseMessage httpRes = null;
 
-            while (retriesLeft > 0)
+            int attempt = 0;
+            while (true)
             {
                 try
                 {
                     var sw = Stopwatch.StartNew();
-                    // Primary: https://overpass.kumi.systems/api/interpreter
-                    // Secondary: https://overpass-api.de/api/interpreter
-                    httpRes = await client.PostAsync("https://overpass.kumi.systems/api/interpreter", content);
+                    httpRes = await client.PostAsync(_currentUrl, content);
                     body = await httpRes.Content.ReadAsStringAsync();
                     long elapsed = sw.ElapsedMilliseconds;
                     osmResponse = JsonSerializer.Deserialize<OsmResponse>(body, SerializerOptions);
-                    _logger.LogTrace($"Loaded (ms: {elapsed}, chars: {body.Length}, elements: {osmResponse.Elements.Count}): {dbgMsg}");
+                    _logger.LogInformation($"Loaded (ms: {elapsed}, chars: {body.Length}, elements: {osmResponse.Elements.Count}): {dbgMsg}, url: {_currentUrl}");
                     break;
                 }
                 catch (Exception e)
                 {
-                    if (--retriesLeft <= 0)
+                    if (++attempt > 3)
                     {
                         _logger.LogWarning($"Giving up getting tile: {dbgMsg}, exception: {e}");
                         return null;
                     }
 
-                    _logger.LogInformation($"Retrying tile: {dbgMsg}, exception: {e}");
+                    // Try switching URL on errors
+                    _currentUrl = _currentUrl == UrlPrimary ? UrlSecondary : UrlPrimary;
+
+                    _logger.LogInformation($"Retrying tile: {dbgMsg}, url: {_currentUrl}, exception: {e}");
                     await Task.Delay(200);
                 }
             }
@@ -81,8 +87,7 @@ namespace Pwe.OverpassTiles
             {
                 var node = new WayTileNode();
                 node.Id = osmNode.Id;
-                node.Lon = osmNode.Lon;
-                node.Lat = osmNode.Lat;
+                node.Point = new GeoCoord(osmNode.Lon, osmNode.Lat);
                 node.Inside = TileMath.IsInsideBounds(osmNode.Lon, osmNode.Lat, bbox) ? (byte?)1 : null;
 
                 nodeLut[osmNode.Id] = node;
@@ -102,8 +107,8 @@ namespace Pwe.OverpassTiles
                     if (nodeA != null && nodeB != null)
                     {
                         // Skip connection if both nodes are out of bounds
-                        bool withinBoundsA = TileMath.IsInsideBounds(nodeA.Lon, nodeA.Lat, bbox);
-                        bool withinBoundsB = TileMath.IsInsideBounds(nodeB.Lon, nodeB.Lat, bbox);
+                        bool withinBoundsA = TileMath.IsInsideBounds(nodeA.Point.Lon, nodeA.Point.Lat, bbox);
+                        bool withinBoundsB = TileMath.IsInsideBounds(nodeB.Point.Lon, nodeB.Point.Lat, bbox);
                         if (withinBoundsA || withinBoundsB)
                         {
                             nodeA.Conn.Add(wayPointB);
@@ -115,7 +120,7 @@ namespace Pwe.OverpassTiles
 
             // Remove orphaned nodes outside of bounds
             result.Nodes = result.Nodes.Where(n => n.Conn.Count > 0).ToList();
-            _logger.LogTrace($"Parsed (nodes: {result.Nodes.Count}): {dbgMsg}");
+            _logger.LogInformation($"Parsed (nodes: {result.Nodes.Count}): {dbgMsg}");
 
             return result;
         }

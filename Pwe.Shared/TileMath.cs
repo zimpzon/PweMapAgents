@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Pwe.TileUtil
+namespace Pwe.Shared
 {
     public static class TileMath
     {
@@ -30,9 +30,9 @@ namespace Pwe.TileUtil
 
         public static long GetTileId(double lon, double lat, int zoom)
         {
-            var tile = WorldToTilePos(lon, lat, zoom);
-            long x = (long)tile.tileX;
-            long y = (long)tile.tileY;
+            var (tileX, tileY) = WorldToTilePos(lon, lat, zoom);
+            long x = (long)tileX;
+            long y = (long)tileY;
             return x + (y << 32);
         }
 

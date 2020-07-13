@@ -1,14 +1,20 @@
 ﻿using System;
 
-namespace Pwe.World
+namespace Pwe.Shared
 {
     public static class GeoMath
     {
-        static public double MetersDistanceTo(double lat1, double lon1, double lat2, double lon2)
+        static public long UnixMs()
+            => (long)(DateTime.UtcNow - DateTime.UnixEpoch).TotalMilliseconds;
+
+        static public double MetersDistanceTo(GeoCoord p0, GeoCoord p1)
+            => MetersDistanceTo(p0.Lon, p0.Lat, p1.Lon, p1.Lat);
+
+        static public double MetersDistanceTo(double lon0, double lat0, double lon1, double lat1)
         {
-            double rlat1 = Math.PI * lat1 / 180;
-            double rlat2 = Math.PI * lat2 / 180;
-            double theta = lon1 - lon2;
+            double rlat1 = Math.PI * lat0 / 180;
+            double rlat2 = Math.PI * lat1 / 180;
+            double theta = lon0 - lon1;
             double rtheta = Math.PI * theta / 180;
             double dist =
                 Math.Sin(rlat1) * Math.Sin(rlat2) + Math.Cos(rlat1) *

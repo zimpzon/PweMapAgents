@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Pwe.World
 {
-    internal interface IMapTileCache
+    public interface IMapTileCache
     {
         Task<WayTile> GetTile(long tileId, int zoom);
     }

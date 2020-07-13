@@ -48,10 +48,10 @@ namespace Pwe.AzureBloBStore
             return await blockBlob.DeleteIfExistsAsync();
         }
 
-        public async Task<string> GetText(string path)
+        public async Task<string> GetText(string path, bool throwIfNotFound = true)
         {
-            var bytes = await InternalGetBlobAsync(path);
-            return Encoding.UTF8.GetString(bytes);
+            var bytes = await InternalGetBlobAsync(path, throwIfNotFound);
+            return bytes == null ? null : Encoding.UTF8.GetString(bytes);
         }
 
         public async Task StoreText(string path, string text, bool overwriteExisting = true)
@@ -68,7 +68,7 @@ namespace Pwe.AzureBloBStore
             return await Task.FromResult(names);
         }
 
-        async Task<byte[]> InternalGetBlobAsync(string path)
+        async Task<byte[]> InternalGetBlobAsync(string path, bool throwIfNotFound = true)
         {
             try
             {
@@ -79,7 +79,10 @@ namespace Pwe.AzureBloBStore
             }
             catch (StorageException e)
             {
-                throw new ArgumentException($"No blob found at path {path}", e);
+                if (throwIfNotFound)
+                    throw new ArgumentException($"No blob found at path {path}", e);
+
+                return null;
             }
         }
 

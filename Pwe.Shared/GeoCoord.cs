@@ -1,7 +1,8 @@
-﻿namespace Pwe.World
+﻿namespace Pwe.Shared
 {
     public class GeoCoord
     {
+        public GeoCoord() { }
         public GeoCoord(double lon, double lat)
         {
             Lon = lon;

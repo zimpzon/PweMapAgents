@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using Pwe.Shared;
+using System.Threading.Tasks;
 
 namespace Pwe.MapAgents
 {
@@ -6,6 +7,8 @@ namespace Pwe.MapAgents
 
     public interface IMapAgentLogic
     {
-        Task UpdateAgent(string id, AgentCommand command);
+        Task UpdateAgent(string agentId, AgentCommand command);
+        Task<MapAgentPath> GetPath(string agentId);
+        Task<string> GetAgentClientPath(string agentId);
     }
 }

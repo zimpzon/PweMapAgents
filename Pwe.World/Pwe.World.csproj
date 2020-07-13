@@ -5,8 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Pwe.AzureBloBStore\Pwe.AzureBlobStore.csproj" />
     <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
-    <ProjectReference Include="..\Pwe.TileUtil\Pwe.TileUtil.csproj" />
+    <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
   </ItemGroup>
 
 </Project>

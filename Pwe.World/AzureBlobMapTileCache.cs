@@ -1,5 +1,5 @@
-﻿using Pwe.OverpassTiles;
-using System.IO;
+﻿using Pwe.AzureBloBStore;
+using Pwe.OverpassTiles;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -7,27 +7,28 @@ namespace Pwe.World
 {
     public class AzureBlobMapTileCache : IMapTileCache
     {
-        const string Folder = "c:\\temp\\maptiles";
         private readonly IWayTileService _wayTileService;
+        private readonly IBlobStoreService _blobStoreService;
 
-        public AzureBlobMapTileCache(IWayTileService wayTileService)
+        public AzureBlobMapTileCache(IWayTileService wayTileService, IBlobStoreService blobStoreService)
         {
             _wayTileService = wayTileService;
+            _blobStoreService = blobStoreService;
         }
 
         public async Task<WayTile> GetTile(long tileId, int zoom)
         {
-            string path = Path.Combine(Folder, tileId.ToString() + ".json");
-            if (File.Exists(path))
+            string path = $"waytiles/{tileId}.json";
+            string cachedJson = await _blobStoreService.GetText(path, throwIfNotFound: false);
+            if (!string.IsNullOrWhiteSpace(cachedJson))
             {
-                string cachedJson = await File.ReadAllTextAsync(path);
                 var result = JsonSerializer.Deserialize<WayTile>(cachedJson);
                 return result;
             }
 
             var newTile = await _wayTileService.GetTile(tileId, zoom);
             string newJson = JsonSerializer.Serialize(newTile);
-            await File.WriteAllTextAsync(path, newJson);
+            await _blobStoreService.StoreText(path, newJson);
             return newTile;
         }
     }

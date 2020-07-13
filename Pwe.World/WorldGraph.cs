@@ -1,5 +1,5 @@
 ﻿using Pwe.OverpassTiles;
-using Pwe.TileUtil;
+using Pwe.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,23 +9,26 @@ namespace Pwe.World
 {
     public class WorldGraph : IWorldGraph
     {
-        const int Zoom = 14;
+        public const int Zoom = 14;
 
         private readonly List<WayTile> _tiles = new List<WayTile>();
         private readonly Random _rnd = new Random();
         private readonly Dictionary<long, WayTileNode> _nodeLut = new Dictionary<long, WayTileNode>();
         private readonly IMapTileCache _mapTileCache;
 
-        public WorldGraph(IWayTileService wayTileService)
+        public WorldGraph(IMapTileCache mapTileCache)
         {
-            _mapTileCache = new AzureBlobMapTileCache(wayTileService);
+            _mapTileCache = mapTileCache;
         }
 
+        public List<WayTile> GetLoadedTiles()
+            => _tiles;
+
         // Finds close node within 2 x 2 tiles, may find none if there are no nodes nearby.
-        public async Task<WayTileNode> GetNearbyNode(double lon, double lat)
+        public async Task<WayTileNode> GetNearbyNode(GeoCoord point)
         {
-            await LoadNearbyTiles(lon, lat);
-            var result = FindClosestLoadedNode(lon, lat);
+            await LoadNearbyTiles(point);
+            var result = FindClosestLoadedNode(point);
             return result;
         }
 
@@ -34,19 +37,19 @@ namespace Pwe.World
         {
             // If node is outside bounds load the linked tile
             if (!node.Inside.HasValue)
-                await LoadTileAtPoint(node.Lon, node.Lat);
+                await LoadTileAtPoint(node.Point);
 
             return node.Conn.Select(id => _nodeLut[id]).ToList();
         }
 
-        WayTileNode FindClosestLoadedNode(double lon, double lat)
+        WayTileNode FindClosestLoadedNode(GeoCoord point)
         {
             WayTileNode result = null;
             double closest = double.MaxValue;
             foreach(var node in _nodeLut.Values)
             {
-                double distanceX = node.Lon - lon;
-                double distanceY = node.Lat - lat;
+                double distanceX = node.Point.Lon - point.Lon;
+                double distanceY = node.Point.Lat - point.Lat;
                 double distanceSqr = (distanceX * distanceX) + (distanceY * distanceY);
                 if (distanceSqr < closest)
                 {
@@ -57,14 +60,14 @@ namespace Pwe.World
             return result;
         }
 
-        async Task LoadNearbyTiles(double lon, double lat)
+        async Task LoadNearbyTiles(GeoCoord point)
         {
-            await LoadTileAtPoint(lon, lat);
+            await LoadTileAtPoint(point);
         }
 
-        async Task LoadTileAtPoint(double lon, double lat)
+        async Task LoadTileAtPoint(GeoCoord point)
         {
-            long tileId = TileMath.GetTileId(lon, lat, Zoom);
+            long tileId = TileMath.GetTileId(point.Lon, point.Lat, Zoom);
             await LoadTile(tileId);
         }
 
@@ -123,7 +126,7 @@ namespace Pwe.World
             {
                 if (!n.Inside.HasValue)
                 {
-                    long tileId = TileMath.GetTileId(n.Lon, n.Lat, Zoom);
+                    long tileId = TileMath.GetTileId(n.Point.Lon, n.Point.Lat, Zoom);
                     if (_tiles.Any(t => t.Id == tileId))
                     {
                         loaded++;
