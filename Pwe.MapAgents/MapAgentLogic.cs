@@ -68,13 +68,24 @@ namespace Pwe.MapAgents
 
             var newPath = new MapAgentPath();
             long pathUnixMs = GeoMath.UnixMs();
+            long pathMs = 0;
+            double pathMeters = 0;
+
             // Keep all points that are in the future
+            long msPrev = -1;
             for (int i = 0; i < oldPath.PointAbsTimestampMs.Count; ++i)
             {
                 if (oldPath.PointAbsTimestampMs[i] >= pathUnixMs)
                 {
                     newPath.PointAbsTimestampMs.Add(oldPath.PointAbsTimestampMs[i]);
                     newPath.Points.Add(oldPath.Points[i]);
+                    long msCurrent = oldPath.PointAbsTimestampMs[i];
+                    if (msPrev != -1)
+                    {
+                        long segmentMs = msCurrent - msPrev;
+                        pathMs += segmentMs;
+                    }
+                    msPrev = msCurrent;
                 }
             }
 
@@ -89,9 +100,6 @@ namespace Pwe.MapAgents
             var startNode = await _worldGraph.GetNearbyNode(startPoint).ConfigureAwait(false);
 
             List<WayTileNode> conn = await _worldGraph.GetNodeConnections(startNode).ConfigureAwait(false);
-            int count = 0;
-            double pathMeters = 0;
-            long pathMs = 0;
             WayTileNode prevNode = null;
             WayTileNode node = startNode;
             WayTileNode nextNode = null;
@@ -120,7 +128,7 @@ namespace Pwe.MapAgents
 
             await _worldGraph.StoreUpdatedVisitCounts().ConfigureAwait(false);
 
-            newPath.PathMeters = pathMeters;
+            newPath.PathMeters = 0; // pathMeters; - missing the remaining old path
             newPath.PathMs = pathMs;
             newPath.TileIds = _worldGraph.GetLoadedTiles().Select(tile => tile.Id).ToList();
             newPath.EncodedPolyline = GooglePolylineConverter.Encode(newPath.Points);
