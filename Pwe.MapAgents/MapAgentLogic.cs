@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
+using Pwe.GeoJson;
 using Pwe.OverpassTiles;
 using Pwe.Shared;
 using Pwe.World;
@@ -44,8 +45,8 @@ namespace Pwe.MapAgents
         }
 
         private static string BuildPathPath(string agentId) => $"agents/{agentId}-path.json";
-
         private static string BuildClientPathPath(string agentId) => $"agents/{agentId}-clientpath.json";
+        private static string BuildGeoJsonPathPath(string agentId) => $"agents/{agentId}-geojson.json";
 
         public async Task<string> GetAgentClientPath(string agentId)
         {
@@ -67,14 +68,20 @@ namespace Pwe.MapAgents
 
             var newPath = new MapAgentPath();
             long pathUnixMs = GeoMath.UnixMs();
+            // Keep all points that are in the future
+            for (int i = 0; i < oldPath.PointAbsTimestampMs.Count; ++i)
+            {
+                if (oldPath.PointAbsTimestampMs[i] >= pathUnixMs)
+                {
+                    newPath.PointAbsTimestampMs.Add(oldPath.PointAbsTimestampMs[i]);
+                    newPath.Points.Add(oldPath.Points[i]);
+                }
+            }
+
             if (newPath.Points.Count == 0)
             {
                 newPath.Points.Add(new GeoCoord(agent.StartLon, agent.StartLat));
                 newPath.PointAbsTimestampMs.Add(pathUnixMs);
-            }
-            else
-            {
-                // Keep all points that are in the future
             }
 
             // Start path here
@@ -91,44 +98,13 @@ namespace Pwe.MapAgents
             while (true)
             {
                 conn = await _worldGraph.GetNodeConnections(node).ConfigureAwait(false);
-                if (conn.Count == 1)
-                {
-                    // Dead end, you have to go back.
-                    nextNode = conn[0];
-                }
-                else if (conn.Count == 2 && prevNode != null)
-                {
-                    // Continue following a road that doesn't end or branch
-                    bool same = conn[0].Id == conn[1].Id;
-                    if (same)
-                    {
-                        // Bug ? Both nodes had the same id. Proabably a link between two tiles. Better be resillient to stuff like that.
-                        nextNode = conn[0];
-                    }
-                    else
-                    {
-                        // Bug ? Landed on a node that had two connections, but neither pointed back to previous node. Better be resillient to stuff like that. (use .First instead of .Single)
-                        nextNode = conn.Where(c => c.Id != prevNode.Id).First();
-                    }
-                }
-                else
-                {
-                    // Random branching (but do not go back where you came from)
-                    int safety = 0;
-                    while (true)
-                    {
-                        nextNode = conn[_rnd.Next(conn.Count)];
 
-                        if (prevNode == null || node.Id != prevNode.Id)
-                            break;
+                long minCount = conn.Min(n => (long)n.VisitCount);
+                var leastVisited = conn.Where(n => n.VisitCount == minCount).ToList();
+                nextNode = leastVisited[_rnd.Next(leastVisited.Count)];
 
-                        if (safety++ > 100)
-                            throw new InvalidOperationException("All branches leads back where we came from?");
-                    }
-
-                    if (++count >= 100)
-                        break;
-                }
+                if (pathMs >= 60 * 10 * 1000) // 10 minutes per path
+                    break;
 
                 prevNode = node;
                 node = nextNode;
@@ -142,6 +118,8 @@ namespace Pwe.MapAgents
                 pathMs += segmentMs;
             }
 
+            await _worldGraph.StoreUpdatedVisitCounts().ConfigureAwait(false);
+
             newPath.PathMeters = pathMeters;
             newPath.PathMs = pathMs;
             newPath.TileIds = _worldGraph.GetLoadedTiles().Select(tile => tile.Id).ToList();
@@ -149,6 +127,9 @@ namespace Pwe.MapAgents
 
             string newPathJson = JsonSerializer.Serialize(newPath);
             await _blobStoreService.StoreText(BuildPathPath(agentId), newPathJson, overwriteExisting: true).ConfigureAwait(false);
+
+            string geoJson = GeoJsonBuilder.AgentPath(newPath);
+            await _blobStoreService.StoreText(BuildGeoJsonPathPath(agentId), geoJson, overwriteExisting: true).ConfigureAwait(false);
 
             var clientPath = new AgentClientPath
             {
@@ -161,3 +142,46 @@ namespace Pwe.MapAgents
         }
     }
 }
+
+            // Randeom walk:
+            //while (true)
+            //{
+            //    conn = await _worldGraph.GetNodeConnections(node).ConfigureAwait(false);
+            //    if (conn.Count == 1)
+            //    {
+            //        // Dead end, you have to go back.
+            //        nextNode = conn[0];
+            //    }
+            //    else if (conn.Count == 2 && prevNode != null)
+            //    {
+            //        // Continue following a road that doesn't end or branch
+            //        bool same = conn[0].Id == conn[1].Id;
+            //        if (same)
+            //        {
+            //            // Bug ? Both nodes had the same id. Proabably a link between two tiles. Better be resillient to stuff like that.
+            //            nextNode = conn[0];
+            //        }
+            //        else
+            //        {
+            //            // Bug ? Landed on a node that had two connections, but neither pointed back to previous node. Better be resillient to stuff like that. (use .First instead of .Single)
+            //            nextNode = conn.Where(c => c.Id != prevNode.Id).First();
+            //        }
+            //    }
+            //    else
+            //    {
+            //        // Random branching (but do not go back where you came from)
+            //        int safety = 0;
+            //        while (true)
+            //        {
+            //            nextNode = conn[_rnd.Next(conn.Count)];
+
+            //            if (prevNode == null || node.Id != prevNode.Id)
+            //                break;
+
+            //            if (safety++ > 100)
+            //                throw new InvalidOperationException("All branches leads back where we came from?");
+            //        }
+
+            //        if (pathMs >= 60 * 10 * 1000) // 10 minutes per path
+            //            break;
+            //    }

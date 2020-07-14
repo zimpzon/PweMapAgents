@@ -9,6 +9,7 @@ namespace Pwe.World
     {
         List<WayTile> GetLoadedTiles();
         Task<WayTileNode> GetNearbyNode(GeoCoord point);
-        Task<List<WayTileNode>> GetNodeConnections(WayTileNode node);
+        Task<List<WayTileNode>> GetNodeConnections(WayTileNode node, bool updateVisitCount = true);
+        Task StoreUpdatedVisitCounts();
     }
 }

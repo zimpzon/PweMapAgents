@@ -13,7 +13,6 @@ namespace Pwe.MapAgents.Fa
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-
             builder.Services.AddLogging();
             builder.Services.AddSingleton((provider) => provider.GetService<ILoggerFactory>().CreateLogger("DefaultLogger"));
 

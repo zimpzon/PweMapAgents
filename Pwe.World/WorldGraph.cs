@@ -33,13 +33,25 @@ namespace Pwe.World
         }
 
         // Will auto-load connected tiles
-        public async Task<List<WayTileNode>> GetNodeConnections(WayTileNode node)
+        public async Task<List<WayTileNode>> GetNodeConnections(WayTileNode node, bool updateVisitCount = true)
         {
             // If node is outside bounds load the linked tile
             if (!node.Inside.HasValue)
                 await LoadTileAtPoint(node.Point);
 
+            node.VisitCount++;
             return node.Conn.Select(id => _nodeLut[id]).ToList();
+        }
+
+        public async Task StoreUpdatedVisitCounts()
+        {
+            var nodeVisits = _tiles.Select(t => new TileVisits { TileId = t.Id }).ToList();
+            foreach(var node in _nodeLut.Values.Where(node => node.VisitCount > 0))
+            {
+                var visitTile = nodeVisits.Where(vt => vt.TileId == node.TileId).FirstOrDefault();
+                visitTile.NodeCounts.Add(new NodeCount { NodeId = node.Id, Count = node.VisitCount.Value });
+            }
+            await _mapTileCache.StoreTileVisits(nodeVisits);
         }
 
         WayTileNode FindClosestLoadedNode(GeoCoord point)
@@ -75,8 +87,15 @@ namespace Pwe.World
         {
             if (!_tiles.Any(t => t.Id == tileId))
             {
-                var tile = await _mapTileCache.GetTile(tileId, Zoom);
+                var tile = await _mapTileCache.GetTile(tileId, Zoom).ConfigureAwait(false);
                 AddTile(tile);
+
+                var tileVisits = await _mapTileCache.GetTileVisits(tileId).ConfigureAwait(false);
+                foreach(var nodeCount in tileVisits.NodeCounts)
+                {
+                    var node = _nodeLut[nodeCount.NodeId];
+                    node.VisitCount = nodeCount.Count;
+                }
             }
         }
 
@@ -99,6 +118,9 @@ namespace Pwe.World
             var bounds = TileMath.GetTileBounds(tile.Id, Zoom);
             foreach(var node in tile.Nodes)
             {
+                node.TileId = tile.Id;
+                node.VisitCount = 0;
+
                 if (_nodeLut.TryGetValue(node.Id, out WayTileNode existingNode))
                 {
                     // It is possible that both nodes are inside their own tile if they are exactly on the border. Which one wins doesn't matter.

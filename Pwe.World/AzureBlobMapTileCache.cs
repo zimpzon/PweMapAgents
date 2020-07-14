@@ -1,5 +1,7 @@
 ﻿using Pwe.AzureBloBStore;
 using Pwe.OverpassTiles;
+using Pwe.Shared;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -30,6 +32,29 @@ namespace Pwe.World
             string newJson = JsonSerializer.Serialize(newTile);
             await _blobStoreService.StoreText(path, newJson);
             return newTile;
+        }
+
+        public async Task<TileVisits> GetTileVisits(long tileId)
+        {
+            string path = $"tilevisits/{tileId}.json";
+            string cachedJson = await _blobStoreService.GetText(path, throwIfNotFound: false);
+            if (!string.IsNullOrWhiteSpace(cachedJson))
+            {
+                var result = JsonSerializer.Deserialize<TileVisits>(cachedJson);
+                return result;
+            }
+
+            return new TileVisits();
+        }
+
+        public async Task StoreTileVisits(List<TileVisits> tileVisits)
+        {
+            foreach(var visits in tileVisits)
+            {
+                string json = JsonSerializer.Serialize(visits);
+                string path = $"tilevisits/{visits.TileId}.json";
+                await _blobStoreService.StoreText(path, json);
+            }
         }
     }
 }
