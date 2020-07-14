@@ -114,9 +114,19 @@ function distance(lat1, lon1, lat2, lon2)
 function getPath()
 {
     console.log('Get path');
-    $.getJSON('http://localhost:7071/api/GetAgentPath?id=1', function (data) {
-        console.log('Got path');
-        console.log(data);
+
+    $.ajax({
+        type: "GET",
+        url: "http://localhost:7071/api/GetAgentPath?id=1",
+        dataType: "json",
+        success: function (json)
+        {
+            alert("success");
+        },
+        error: function (x, y, z)
+        {
+            alert("ouch: " + x.responseText);
+        }
     });
 }
 
