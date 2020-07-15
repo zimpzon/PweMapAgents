@@ -54,6 +54,12 @@ namespace Pwe.AzureBloBStore
             return bytes == null ? null : Encoding.UTF8.GetString(bytes);
         }
 
+        public async Task<byte[]> GetBytes(string path, bool throwIfNotFound = true)
+        {
+            var bytes = await InternalGetBlobAsync(path, throwIfNotFound);
+            return bytes;
+        }
+
         public async Task StoreText(string path, string text, bool overwriteExisting = true)
         {
             var bytes = Encoding.UTF8.GetBytes(text);

@@ -14,9 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GoogleApis\GoogleApis.csproj" />
     <ProjectReference Include="..\Pwe.MapAgents.Fa\Pwe.MapAgents.Fa.csproj" />
     <ProjectReference Include="..\Pwe.MapAgents\Pwe.MapAgents.csproj" />
     <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
+    <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
     <ProjectReference Include="..\Pwe.World\Pwe.World.csproj" />
   </ItemGroup>
 

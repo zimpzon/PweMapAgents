@@ -1,6 +1,6 @@
 var polyline = null;
 var delay = 16;
-var pathReloadDelay = 60 * 9 * 1000; // 9 min
+var pathReloadDelay = 60 * 5 * 1000;
 var mymap;
 var isZooming = false;
 var prevLocIdx = 0;
@@ -9,13 +9,20 @@ var google;
 var agent;
 var icon;
 var marker;
+var pathRequested = false;
+var isFirstPathLoad = true;
 
 function init()
 {
-    mymap = L.map('map').setView([55.6712674, 12.5938239], 12);
+    mymap = L.map('map');
+    //mymap.on('zoomend', function () {
+    //    var newzoom = '' + (8 * (mymap.getZoom())) + 'px';
+    //    $('.markerClass').css({ 'width': newzoom, 'height': newzoom });
+    //});
+
     L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-        maxZoom: 18,
+        maxZoom: 17,
         id: 'OSM'
     }).addTo(mymap);
     mymap.on("zoomstart", function (e) { isZooming = true; });
@@ -46,16 +53,22 @@ function updatePos()
     if (t > 1)
         t = 1;
 
+    if (t > 0.95 && !pathRequested) {
+        console.log("Getting path, t = " + t);
+        updatePath();
+    }
+
     var distT = agent.PolyLineTotalLength * t;
 
     // Find the correct segment
     var i;
-    for (i = agent.LastPathIdx; i < agent.PolyLineSummedDistances.length - 1; i++) {
+    for (i = agent.LastPathIdx; i < agent.PolyLineSummedDistances.length - 1; i++)
+    {
         if (agent.PolyLineSummedDistances[i] > distT)
             break;
     }
 
-    // i is now one too far. 
+    // i is now one too far.
     i--;
     agent.LastPathIdx = i;
     var seg0 = agent.PolyLine[i + 0];
@@ -65,6 +78,12 @@ function updatePos()
     var segT = (t - t0) * 1 / (t1 - t0);
     var interpolated = google.maps.geometry.spherical.interpolate(seg0, seg1, segT);
     marker.setLatLng([interpolated.lat(), interpolated.lng()]);
+
+    if (isFirstPathLoad)
+    {
+        isFirstPathLoad = false;
+        mymap.setView([interpolated.lat(), interpolated.lng()], 14);
+    }
 }
 
 function decodeData(data)
@@ -72,9 +91,10 @@ function decodeData(data)
     if (icon == undefined)
     {
         icon = L.icon({
-            iconUrl: 'https://s3.eu-central-1.amazonaws.com/12-22-d/Paint/cactus.png',
-            iconSize: [60, 60],
-            iconAnchor: [30, 56]
+            iconUrl: 'cactus.png',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            className: 'markerClass'
         });
         marker = L.marker([0, 0], { icon: icon }).addTo(mymap);
     }
@@ -111,13 +131,16 @@ function distance(lat1, lon1, lat2, lon2)
 
 function updatePath()
 {
+    pathRequested = true;
     $.ajax({
         type: "GET",
         url: "https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-clientpath.json?sv=2019-02-02&st=2020-07-14T11%3A06%3A00Z&se=2030-07-15T11%3A06%3A00Z&sr=b&sp=r&sig=rVzcJjXwrpfk6zPnbZ1jeoBmjzjZ7nLyHHmyAGpW2XU%3D",
         dataType: "json",
         success: function (json)
         {
+            console.log("Got path");
             decodeData(json);
+            pathRequested = false;
         },
         error: function (x, y, z)
         {
@@ -125,19 +148,17 @@ function updatePath()
         }
     });
 
-    $.ajax({
-        type: "GET",
-        url: "https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-geojson.json?sv=2019-02-02&st=2020-07-14T12%3A00%3A21Z&se=2030-01-01T12%3A00%3A00Z&sr=b&sp=r&sig=8wMnQccvBvXXT55JCH5Gpo3L5LSqZ8J96mUwD7t6YK4%3D",
-        dataType: "json",
-        success: function (json) {
-            L.geoJSON(json).addTo(mymap);
-        },
-        error: function (x, y, z) {
-            alert("Error getting geojson: " + x.responseText);
-        }
-    });
-
-    setTimeout(updatePath, pathReloadDelay);
+    //$.ajax({
+    //    type: "GET",
+    //    url: "https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-geojson.json?sv=2019-02-02&st=2020-07-14T12%3A00%3A21Z&se=2030-01-01T12%3A00%3A00Z&sr=b&sp=r&sig=8wMnQccvBvXXT55JCH5Gpo3L5LSqZ8J96mUwD7t6YK4%3D",
+    //    dataType: "json",
+    //    success: function (json) {
+    //        L.geoJSON(json).addTo(mymap);
+    //    },
+    //    error: function (x, y, z) {
+    //        alert("Error getting geojson: " + x.responseText);
+    //    }
+    //});
 }
 
 window.onload = init;

@@ -19,9 +19,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pwe.Shared", "Pwe.Shared\Pw
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2627BBB4-92F9-477D-9311-38AB43D333F0}"
 	ProjectSection(SolutionItems) = preProject
+		Client\cactus.png = Client\cactus.png
 		Client\client.js = Client\client.js
 		Client\page.html = Client\page.html
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleApis", "GoogleApis\GoogleApis.csproj", "{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +60,10 @@ Global
 		{25B49A5A-FBDD-4085-8C0B-094B3C579871}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25B49A5A-FBDD-4085-8C0B-094B3C579871}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25B49A5A-FBDD-4085-8C0B-094B3C579871}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
