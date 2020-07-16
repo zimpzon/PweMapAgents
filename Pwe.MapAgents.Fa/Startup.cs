@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using GoogleApis;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
@@ -26,6 +27,9 @@ namespace Pwe.MapAgents.Fa
             services.AddSingleton<IWayTileService, OverpassWayTileService>();
             services.AddSingleton<IBlobStoreService, AzureBlobStoreService>();
             services.AddSingleton<IMapTileCache, AzureBlobMapTileCache>();
+            services.AddTransient<IStreetView, GoogleStreetView>();
+            services.AddTransient<ISelfie, Selfie>();
+            services.AddTransient<ILocationInformation, LocationInformation>();
         }
     }
 }

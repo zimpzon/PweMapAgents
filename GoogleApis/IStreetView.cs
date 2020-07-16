@@ -5,7 +5,6 @@ namespace GoogleApis
 {
     public interface IStreetView
     {
-        Task<byte[]> Test(GeoCoord point);
+        Task<byte[]> GetRandomImage(GeoCoord point);
     }
 }
-

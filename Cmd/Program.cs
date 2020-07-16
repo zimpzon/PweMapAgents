@@ -7,7 +7,6 @@ using Pwe.MapAgents;
 using Pwe.OverpassTiles;
 using Pwe.World;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 using System;
 using System.Threading.Tasks;
 
@@ -15,42 +14,25 @@ namespace Cmd
 {
     class Program
     {
+        // TODO:
+        // When entering new tile, update coverage map (service bus or directly? Multiple layers? Use ImageSharp on PNG?)
+        // Selfie address, maybe write on image?
+
         static async Task Main(string[] _)
         {
             var services = BuildServiceProvider();
             var blobs = services.GetRequiredService<IBlobStoreService>();
-            var cactusBytes = await blobs.GetBytes("agentoutfits/cactus.png");
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
             var path = await agents.GetPath("1").ConfigureAwait(false);
 
-            int Pct(int src, double pct) => (int)(src * pct);
-
-            var rnd = new Random();
+            var selfies = services.GetRequiredService<ISelfie>();
+            var locationInfo = services.GetRequiredService<ILocationInformation>();
             for (int i = 0; i < 20; ++i)
             {
-                var randomPoint = path.Points[rnd.Next(path.Points.Count)];
-
-                var view = services.GetRequiredService<IStreetView>();
-                var bytes = await view.Test(randomPoint);
-                if (bytes != null)
-                {
-                    var cactusImg = SixLabors.ImageSharp.Image.Load(cactusBytes);
-                    var srcSize = cactusImg.Size();
-
-                    int agentRotation = rnd.Next(44) - 22;
-                    cactusImg.Mutate(x => x.Rotate(agentRotation));
-
-                    var dstImg = SixLabors.ImageSharp.Image.Load(bytes);
-                    var dstSize = dstImg.Size();
-                    int offsetBottom = rnd.Next(Pct(srcSize.Height, 0.3));
-                    int selfieX = Pct(dstSize.Width, 0.4) + rnd.Next(Pct(dstSize.Width, 0.2)) - Pct(srcSize.Width, 0.5);
-                    int selfieY = dstSize.Height - Pct(srcSize.Height, 0.95) + offsetBottom;
-                    var selfiePoint = new Point(selfieX, selfieY);
-
-                    dstImg.Mutate(x => x.DrawImage (cactusImg, selfiePoint, 1));
-                    dstImg.Save($"c:\\temp\\image{i}.png");
-                }
+                var (image, location) = await selfies.Take(path.Points);
+                string info = await locationInfo.GetInormation(location);
+                image.Save($"c:\\temp\\selfie {info}.png");
             }
 
             //await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
@@ -62,7 +44,7 @@ namespace Cmd
         {
             var serviceCollection = new ServiceCollection();
 
-            var configBuilder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
+            var configBuilder = new ConfigurationBuilder().AddJsonFile("appsettings.json").AddJsonFile("local.settings.json");
             var config = configBuilder.Build();
             serviceCollection.AddSingleton<IConfiguration>(config);
 
@@ -87,6 +69,8 @@ namespace Cmd
             services.AddSingleton<IBlobStoreService, AzureBlobStoreService>();
             services.AddSingleton<IMapTileCache, AzureBlobMapTileCache>();
             services.AddTransient<IStreetView, GoogleStreetView>();
+            services.AddTransient<ISelfie, Selfie>();
+            services.AddTransient<ILocationInformation, LocationInformation>();
         }
     }
 }

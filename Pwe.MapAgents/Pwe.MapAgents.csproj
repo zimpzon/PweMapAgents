@@ -10,9 +10,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.5" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-rc0003" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GoogleApis\GoogleApis.csproj" />
     <ProjectReference Include="..\Pwe.AzureBloBStore\Pwe.AzureBlobStore.csproj" />
     <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
     <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />

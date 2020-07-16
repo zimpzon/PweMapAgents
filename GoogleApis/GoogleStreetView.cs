@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Pwe.Shared;
 using System;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -9,6 +10,9 @@ namespace GoogleApis
 {
     public class GoogleStreetView : IStreetView
     {
+        static readonly NumberFormatInfo nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
+        static string NumberStr(double d) => d.ToString(nfi);
+
         private readonly ILogger _logger;
         private readonly string _apiKey;
 
@@ -18,7 +22,7 @@ namespace GoogleApis
             _apiKey = config["GoogleApiKey"];
         }
 
-        public async Task<byte[]> Test(GeoCoord point)
+        public async Task<byte[]> GetRandomImage(GeoCoord point)
         {
             var client = new HttpClient();
             HttpResponseMessage httpRes;
@@ -32,8 +36,13 @@ namespace GoogleApis
             int heading = new Random().Next(360);
             int pitch = (new Random().Next(20)) - 10;
             int fov = new Random().Next(20) + 70;
-            httpRes = await client.GetAsync($"https://maps.googleapis.com/maps/api/streetview?size=600x600&location={point.Lat},{point.Lon}&fov={fov}&heading={heading}&pitch={pitch}&key={_apiKey}");
+            httpRes = await client.GetAsync($"https://maps.googleapis.com/maps/api/streetview?size=600x600&location={NumberStr(point.Lat)},{NumberStr(point.Lon)}&fov={fov}&heading={heading}&pitch={pitch}&key={_apiKey}");
             var bytes = await httpRes.Content.ReadAsByteArrayAsync();
+            if (bytes.Length < 1000)
+            {
+                _logger.LogInformation($"Error getting StreetView image, bytes: {bytes.Length}");
+                return null;
+            }
 
             _logger.LogInformation($"Got StreetView image, bytes: {bytes.Length}");
             return bytes;

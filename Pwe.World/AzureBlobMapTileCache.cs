@@ -44,7 +44,13 @@ namespace Pwe.World
                 return result;
             }
 
-            return new TileVisits();
+            OnTileFirstVisit(tileId);
+            return new TileVisits { TileId = tileId };
+        }
+
+        void OnTileFirstVisit(long tileId)
+        {
+            // Update coverage image(s)
         }
 
         public async Task StoreTileVisits(List<TileVisits> tileVisits)
