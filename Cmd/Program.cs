@@ -1,4 +1,5 @@
-﻿using GoogleApis;
+﻿using CoreTweet;
+using GoogleApis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,7 +8,10 @@ using Pwe.MapAgents;
 using Pwe.OverpassTiles;
 using Pwe.World;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Cmd
@@ -20,19 +24,37 @@ namespace Cmd
 
         static async Task Main(string[] _)
         {
+            var tokens = Tokens.Create("---", "---", "---", "---");
+
             var services = BuildServiceProvider();
             var blobs = services.GetRequiredService<IBlobStoreService>();
+
+            var img = new Image<L8>(64, 64);
+            for (int i = 0; i < 32; ++i)
+                img[i, i] = new L8(255);
+
+            img.Save("c:\\temp\\coverage.png");
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
             var path = await agents.GetPath("1").ConfigureAwait(false);
 
             var selfies = services.GetRequiredService<ISelfie>();
             var locationInfo = services.GetRequiredService<ILocationInformation>();
-            for (int i = 0; i < 20; ++i)
+
+            var (image, location) = await selfies.Take(path.Points);
+            if (image != null)
             {
-                var (image, location) = await selfies.Take(path.Points);
-                string info = await locationInfo.GetInormation(location);
+                string info = await locationInfo.GetInformation(location);
                 image.Save($"c:\\temp\\selfie {info}.png");
+                var memStream = new MemoryStream();
+                image.SaveAsPng(memStream);
+                memStream.Position = 0;
+
+                //await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, display_coordinates: true).ConfigureAwait(false);
+
+                var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
+                var media = new List<long> { uploadResult.MediaId };
+                await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
             }
 
             //await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);

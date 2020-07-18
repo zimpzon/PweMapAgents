@@ -22,7 +22,7 @@ namespace GoogleApis
             _apiKey = config["GoogleApiKey"];
         }
 
-        public async Task<string> GetInormation(GeoCoord point)
+        public async Task<string> GetInformation(GeoCoord point)
         {
             var client = new HttpClient();
             HttpResponseMessage httpRes;

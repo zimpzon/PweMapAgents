@@ -36,7 +36,7 @@ namespace GoogleApis
             int heading = new Random().Next(360);
             int pitch = (new Random().Next(20)) - 10;
             int fov = new Random().Next(20) + 70;
-            httpRes = await client.GetAsync($"https://maps.googleapis.com/maps/api/streetview?size=600x600&location={NumberStr(point.Lat)},{NumberStr(point.Lon)}&fov={fov}&heading={heading}&pitch={pitch}&key={_apiKey}");
+            httpRes = await client.GetAsync($"https://maps.googleapis.com/maps/api/streetview?size=640x640&location={NumberStr(point.Lat)},{NumberStr(point.Lon)}&fov={fov}&heading={heading}&pitch={pitch}&key={_apiKey}");
             var bytes = await httpRes.Content.ReadAsByteArrayAsync();
             if (bytes.Length < 1000)
             {

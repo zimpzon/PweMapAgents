@@ -27,6 +27,8 @@ namespace Pwe.MapAgents
 
         public async Task<(Image image, GeoCoord location)> Take(List<GeoCoord> path)
         {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
             var cactusBytes = await _blobStoreService.GetBytes("agentoutfits/cactus.png").ConfigureAwait(false);
             const int MaxAttempts = 20;
             for (int i = 0; i < MaxAttempts; ++i)

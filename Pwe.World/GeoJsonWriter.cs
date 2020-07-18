@@ -7,6 +7,8 @@ namespace Pwe.GeoJson
 {
     public static class GeoJsonBuilder
     {
+        public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
         public static string AgentPath(MapAgentPath path, bool addBoundingBoxex = true)
         {
             var result = new GeoJsonMultiLine();
@@ -14,10 +16,12 @@ namespace Pwe.GeoJson
             {
                 var p0 = path.Points[i];
                 var p1 = path.Points[i + 1];
-                var segment = new List<List<double>>();
-                segment.Add(new List<double> { p0.Lon, p0.Lat });
-                segment.Add(new List<double> { p1.Lon, p1.Lat });
-                result.coordinates.Add(segment);
+                var segment = new List<List<double>>
+                {
+                    new List<double> { p0.Lon, p0.Lat },
+                    new List<double> { p1.Lon, p1.Lat }
+                };
+                result.Coordinates.Add(segment);
             }
 
             if (addBoundingBoxex)
@@ -25,35 +29,35 @@ namespace Pwe.GeoJson
                 foreach (var tileId in path.TileIds)
                 {
                     var bbox = new List<List<double>>();
-                    var bounds = TileMath.GetTileBounds(tileId, WorldGraph.Zoom);
-                    bbox.Add(new List<double> { bounds.lon0, bounds.lat0 });
-                    bbox.Add(new List<double> { bounds.lon1, bounds.lat0 });
-                    bbox.Add(new List<double> { bounds.lon1, bounds.lat1 });
-                    bbox.Add(new List<double> { bounds.lon0, bounds.lat1 });
-                    bbox.Add(new List<double> { bounds.lon0, bounds.lat0 });
-                    result.coordinates.Add(bbox);
+                    var (lon0, lat0, lon1, lat1) = TileMath.GetTileBounds(tileId, WorldGraph.Zoom);
+                    bbox.Add(new List<double> { lon0, lat0 });
+                    bbox.Add(new List<double> { lon1, lat0 });
+                    bbox.Add(new List<double> { lon1, lat1 });
+                    bbox.Add(new List<double> { lon0, lat1 });
+                    bbox.Add(new List<double> { lon0, lat0 });
+                    result.Coordinates.Add(bbox);
                 }
             }
 
-            return JsonSerializer.Serialize(result);
+            return JsonSerializer.Serialize(result, SerializerOptions);
         }
 
         class GeoJsonGeometryCollection
         {
-            public string type { get; } = "GeometryCollection";
-            public List<object> geometries = new List<object>();
+            public string Type { get; } = "GeometryCollection";
+            public List<object> Geometries = new List<object>();
         }
 
         class GeoJsonMultiLine
         {
-            public string type { get; } = "MultiLineString";
-            public List<List<List<double>>> coordinates { get; set; } = new List<List<List<double>>>();
+            public string Type { get; } = "MultiLineString";
+            public List<List<List<double>>> Coordinates { get; set; } = new List<List<List<double>>>();
         }
 
         class GeoJsonMultiPoint
         {
-            public string type { get; } = "MultiPoint";
-            public List<List<double>> coordinates { get; set; } = new List<List<double>>();
+            public string Type { get; } = "MultiPoint";
+            public List<List<double>> Coordinates { get; set; } = new List<List<double>>();
         }
     }
 }

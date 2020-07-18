@@ -20,6 +20,9 @@ function init()
     //    $('.markerClass').css({ 'width': newzoom, 'height': newzoom });
     //});
 
+    var imageUrl = 'https://maps0pwe0sa.blob.core.windows.net/$web/coverage.png',
+        imageBounds = [[55.555528, 12.591849], [56.555528, 13.591849]];
+    L.imageOverlay(imageUrl, imageBounds).addTo(mymap).on('error', function (e) { console.log(e) });
     L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
         maxZoom: 17,
@@ -148,17 +151,17 @@ function updatePath()
         }
     });
 
-    //$.ajax({
-    //    type: "GET",
-    //    url: "https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-geojson.json?sv=2019-02-02&st=2020-07-14T12%3A00%3A21Z&se=2030-01-01T12%3A00%3A00Z&sr=b&sp=r&sig=8wMnQccvBvXXT55JCH5Gpo3L5LSqZ8J96mUwD7t6YK4%3D",
-    //    dataType: "json",
-    //    success: function (json) {
-    //        L.geoJSON(json).addTo(mymap);
-    //    },
-    //    error: function (x, y, z) {
-    //        alert("Error getting geojson: " + x.responseText);
-    //    }
-    //});
+    $.ajax({
+        type: "GET",
+        url: "https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-geojson.json?sv=2019-02-02&st=2020-07-14T12%3A00%3A21Z&se=2030-01-01T12%3A00%3A00Z&sr=b&sp=r&sig=8wMnQccvBvXXT55JCH5Gpo3L5LSqZ8J96mUwD7t6YK4%3D",
+        dataType: "json",
+        success: function (json) {
+            L.geoJSON(json).addTo(mymap);
+        },
+        error: function (x, y, z) {
+            alert("Error getting geojson: " + x.responseText);
+        }
+    });
 }
 
 window.onload = init;

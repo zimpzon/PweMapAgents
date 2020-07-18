@@ -24,7 +24,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Client\page.html = Client\page.html
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleApis", "GoogleApis\GoogleApis.csproj", "{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoogleApis", "GoogleApis\GoogleApis.csproj", "{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorLeaflet", "BlazorLeaflet\BlazorLeaflet.csproj", "{0374C85E-FAF7-4E4B-B15F-33F36AE17795}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorLeaflet.Samples", "BlazorLeaflet.Samples\BlazorLeaflet.Samples.csproj", "{F7C569F9-8002-4E7C-A3CF-88A677C15CF9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +68,14 @@ Global
 		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A17C9D68-6C45-4E1F-9133-08D9A1F3E6C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0374C85E-FAF7-4E4B-B15F-33F36AE17795}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0374C85E-FAF7-4E4B-B15F-33F36AE17795}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0374C85E-FAF7-4E4B-B15F-33F36AE17795}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0374C85E-FAF7-4E4B-B15F-33F36AE17795}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7C569F9-8002-4E7C-A3CF-88A677C15CF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7C569F9-8002-4E7C-A3CF-88A677C15CF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7C569F9-8002-4E7C-A3CF-88A677C15CF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7C569F9-8002-4E7C-A3CF-88A677C15CF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,7 +5,7 @@ namespace GoogleApis
 {
     public interface ILocationInformation
     {
-        Task<string> GetInormation(GeoCoord point);
+        Task<string> GetInformation(GeoCoord point);
     }
 }
 

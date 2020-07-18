@@ -115,7 +115,7 @@ namespace Pwe.World
 
             _tiles.Add(tile);
 
-            var bounds = TileMath.GetTileBounds(tile.Id, Zoom);
+            var (lon0, lat0, lon1, lat1) = TileMath.GetTileBounds(tile.Id, Zoom);
             foreach(var node in tile.Nodes)
             {
                 node.TileId = tile.Id;
