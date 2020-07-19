@@ -55,16 +55,12 @@
                 Radius = 10f
             };
             _map.AddLayer(_circle);
+
+            ((IJSInProcessRuntime)jsRuntime).InvokeVoid("init", _map.Id);
         };
     }
 
     private LatLng _startAt = new LatLng(47.5574007f, 16.3918687f);
-    public string CityName { get; set; }
-
-
-    private void FindCity()
-    {
-    }
 
     private void ZoomMap()
     {

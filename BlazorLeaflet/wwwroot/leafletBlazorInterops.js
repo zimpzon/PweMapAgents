@@ -1,4 +1,4 @@
-﻿maps = {};
+maps = {};
 layers = {};
 
 window.leafletBlazor = {
@@ -53,8 +53,8 @@ window.leafletBlazor = {
         addLayer(mapId, layer, shapefileLayer.id);
     },
     addMarker: function (mapId, marker, objectReference) {
-        var options = {
-            ...createInteractiveLayer(marker),
+        var options = Object.assign({}, createInteractiveLayer(marker),
+        {
             keyboard: marker.isKeyboardAccessible,
             title: marker.title,
             alt: marker.alt,
@@ -68,7 +68,7 @@ window.leafletBlazor = {
             autoPan: marker.useAutopan,
             autoPanPadding: marker.autoPanPadding,
             autoPanSpeed: marker.autoPanSpeed
-        };
+        });
 
         if (marker.icon !== null) {
             options.icon = createIcon(marker.icon);
@@ -112,11 +112,10 @@ window.leafletBlazor = {
         }
     },
     addCircle: function (mapId, circle, objectReference) {
-        const layer = L.circle(circle.position,
+        const layer = L.circle(circle.position, Object.assign({}, createPath(circle),
             {
-                ...createPath(circle),
                 radius: circle.radius
-            });
+            }));
         addLayer(mapId, layer, circle.id);
         setTooltipAndPopupIfDefined(circle, layer);
     },
@@ -128,15 +127,15 @@ window.leafletBlazor = {
         }
     },
     addImageLayer: function (mapId, image, objectReference) {
-        const layerOptions = {
-            ...createInteractiveLayer(image),
+        const layerOptions = Object.assign({}, createInteractiveLayer(image),
+        {
             opacity: image.opacity,
             alt: image.alt,
             crossOrigin: image.crossOrigin,
             errorOverlayUrl: image.errorOverlayUrl,
             zIndex: image.zIndex,
             className: image.className
-        };
+        });
 
         const corner1 = L.latLng(image.corner1.x, image.corner1.y);
         const corner2 = L.latLng(image.corner2.x, image.corner2.y);
@@ -147,14 +146,13 @@ window.leafletBlazor = {
     },
     addGeoJsonLayer: function (mapId, geodata, objectReference) {
         const geoDataObject = JSON.parse(geodata.geoJsonData);
-        var options = {
-            ...createInteractiveLayer(geodata),
+        var options = Object.assign({}, createInteractiveLayer(geodata), {
             title: geodata.title,
             bubblingMouseEvents: geodata.isBubblingMouseEvents,
             onEachFeature: function onEachFeature(feature, layer) {
                 connectInteractionEvents(layer, objectReference);
             }
-        };
+        });
 
         const geoJsonLayer = L.geoJson(geoDataObject, options);
         addLayer(mapId, geoJsonLayer, geodata.id);
@@ -252,16 +250,16 @@ function shapeToLatLngArray(shape) {
 }
 
 function createPolyline(polyline) {
-    return {
-        ...createPath(polyline),
+    return Object.assign({}, createPath(polyline),
+    {
         smoothFactor: polyline.smoothFactor,
         noClip: polyline.noClipEnabled
-    };
+    });
 }
 
 function createPath(path) {
-    return {
-        ...createInteractiveLayer(path),
+    return Object.assign({}, createInteractiveLayer(path),
+    {
         stroke: path.drawStroke,
         color: getColorString(path.strokeColor),
         weight: path.strokeWidth,
@@ -274,15 +272,15 @@ function createPath(path) {
         fillColor: getColorString(path.fillColor),
         fillOpacity: path.fillOpacity,
         fillRule: path.fillRule
-    };
+    });
 }
 
 function createInteractiveLayer(layer) {
-    return {
-        ...createLayer(layer),
+    return Object.assign({}, layer,
+    {
         interactive: layer.isInteractive,
         bubblingMouseEvents: layer.isBubblingMouseEvents
-    };
+    });
 }
 
 function createLayer(obj) {
