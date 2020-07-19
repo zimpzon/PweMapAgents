@@ -1,19 +1,10 @@
 ﻿@page "/"
 @using System.Drawing
+@using BlazorLeaflet
 @using BlazorLeaflet.Models
 @inject IJSRuntime jsRuntime
 
-<h1>Blazor Leaflet</h1>
-
-<div class="form-inline m-2">
-    <div class="form-group mb-2">
-        <label>Tell me more about </label>
-        <input class="form-control ml-2 mr-2" placeholder="city name" @bind="CityName" />
-    </div>
-    <button class="btn btn-primary mb-2" @onclick="FindCity">Search</button>
-    <button class="btn btn-primary mb-2" @onclick="ZoomMap">Zoom</button>
-    <button class="btn btn-primary mb-2" @onclick="PanToNY">Pan to New York</button>
-</div>
+<h1>Hello, map!</h1>
 
 <div style="height: 500px; width: 500px;">
     <LeafletMap Map="_map" />
@@ -21,7 +12,6 @@
 
 @code
 {
-
     private Map _map;
 
     private Circle _circle;
@@ -54,7 +44,7 @@
                 }
             });
 
-            _map.AddLayer(new Models.Rectangle
+            _map.AddLayer(new BlazorLeaflet.Models.Rectangle
             {
                 Shape = new RectangleF(10f, 0f, 5f, 1f)
             });
