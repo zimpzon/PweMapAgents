@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlazorLeaflet\BlazorLeaflet.csproj" />
+    <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
   </ItemGroup>
 
 </Project>

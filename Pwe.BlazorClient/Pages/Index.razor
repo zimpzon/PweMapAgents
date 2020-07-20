@@ -2,21 +2,35 @@
 @using System.Drawing
 @using BlazorLeaflet
 @using BlazorLeaflet.Models
+@using System.Net.Http
+@inject HttpClient Http
 @inject IJSRuntime jsRuntime
-
-<h1>Hello, map!</h1>
+@implements IDisposable
 
 <div style="height: 500px; width: 500px;">
     <LeafletMap Map="_map" />
 </div>
+<br />
+T: @($"{_parsedClientPath.T:0.00000}")
+TimeLeft: @_parsedClientPath.TimeRemaining
 
 @code
 {
+    enum PathStatus { Null, Traversing, LoadingNext, };
+
     private Map _map;
-
+    private Pwe.Shared.AgentClientPath _path;
+    private Pwe.Shared.ParsedClientPath _parsedClientPath = new Pwe.Shared.ParsedClientPath();
     private Circle _circle;
+    private System.Threading.Timer _tickTimer;
+    private PathStatus _pathStatus = PathStatus.Null;
+    private double _pathT;
 
-    protected override void OnInitialized()
+    public void Dispose()
+    {
+    }
+
+    protected override async Task OnInitializedAsync()
     {
         _map = new Map(jsRuntime)
         {
@@ -24,40 +38,78 @@
             Zoom = 4.8f
         };
 
-        _map.OnInitialized += () =>
+        _map.OnInitialized += OnMapReady;
+
+        _tickTimer = new System.Threading.Timer((_) =>
         {
-            _map.AddLayer(new TileLayer
-            {
-                UrlTemplate = "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                Attribution = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
-            });
+            Tick();
+        }, null, 100, 0);
 
-            _map.AddLayer(new Polygon
-            {
-                Shape = new[]
-                { new[] { new PointF(37f, -109.05f), new PointF(41f, -109.03f), new PointF(41f, -102.05f), new PointF(37f, -102.04f) } },
-                Fill = true,
-                FillColor = Color.Blue,
-                Popup = new Popup
-                {
-                    Content = "How are you doing,"
-                }
-            });
+        await UpdatePath();
+        await Task.CompletedTask;
+    }
 
-            _map.AddLayer(new BlazorLeaflet.Models.Rectangle
-            {
-                Shape = new RectangleF(10f, 0f, 5f, 1f)
-            });
+    private void Tick()
+    {
+        if (_pathStatus == PathStatus.Null)
+        {
+            _tickTimer.Change(100, 0);
+            return;
+        }
 
-            _circle = new Circle
-            {
-                Position = new LatLng(10f, 5f),
-                Radius = 10f
-            };
-            _map.AddLayer(_circle);
+        long unixMs = Pwe.Shared.GeoMath.UnixMs();
+        _parsedClientPath.SetTime(unixMs);
+        _pathT = _parsedClientPath.T;
+        base.StateHasChanged();
 
-            ((IJSInProcessRuntime)jsRuntime).InvokeVoid("init", _map.Id);
+        if (_parsedClientPath.T >= 1.0)
+        {
+            _pathStatus = PathStatus.LoadingNext;
+            InvokeAsync(() => UpdatePath());
+        }
+
+        _tickTimer.Change(16, 0);
+    }
+
+    private async Task UpdatePath()
+    {
+        var jsonPath = await Http.GetStringAsync("https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-clientpath.json?sv=2019-02-02&st=2020-07-14T11%3A06%3A00Z&se=2030-07-15T11%3A06%3A00Z&sr=b&sp=r&sig=rVzcJjXwrpfk6zPnbZ1jeoBmjzjZ7nLyHHmyAGpW2XU%3D");
+        _path = System.Text.Json.JsonSerializer.Deserialize<Pwe.Shared.AgentClientPath>(jsonPath);
+        _parsedClientPath = Pwe.Shared.ParsedClientPath.Create(_path);
+        _pathStatus = PathStatus.Traversing;
+    }
+
+    private void OnMapReady()
+    {
+        _map.AddLayer(new TileLayer
+        {
+            UrlTemplate = "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            Attribution = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+        });
+
+        _map.AddLayer(new Polygon
+        {
+            Shape = new[]
+            { new[] { new PointF(37f, -109.05f), new PointF(41f, -109.03f), new PointF(41f, -102.05f), new PointF(37f, -102.04f) } },
+            Fill = true,
+            FillColor = Color.Blue,
+            Popup = new Popup
+            {
+                Content = "How are you doing,"
+            }
+        });
+
+        _map.AddLayer(new BlazorLeaflet.Models.Rectangle
+        {
+            Shape = new RectangleF(10f, 0f, 5f, 1f)
+        });
+
+        _circle = new Circle
+        {
+            Position = new LatLng(10f, 5f),
+            Radius = 10f
         };
+        _map.AddLayer(_circle);
     }
 
     private LatLng _startAt = new LatLng(47.5574007f, 16.3918687f);
@@ -70,6 +122,4 @@
     private void PanToNY()
     {
         _map.PanTo(new PointF(40.713185f, -74.0072333f), animate: true, duration: 10f);
-    }
-
-}
+    } }

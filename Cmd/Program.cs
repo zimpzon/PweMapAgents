@@ -6,12 +6,14 @@ using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
 using Pwe.MapAgents;
 using Pwe.OverpassTiles;
+using Pwe.Shared;
 using Pwe.World;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Cmd
@@ -36,6 +38,17 @@ namespace Cmd
             img.Save("c:\\temp\\coverage.png");
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
+
+            var jsonClientPath = await agents.GetAgentClientPath("1").ConfigureAwait(false);
+            var clientPath = JsonSerializer.Deserialize<AgentClientPath>(jsonClientPath);
+            var parsed = ParsedClientPath.Create(clientPath);
+            while (true)
+            {
+                parsed.SetTime(GeoMath.UnixMs());
+                Console.WriteLine($"T: {parsed.T}, timeLeft: {parsed.TimeRemaining}");
+                await Task.Delay(500);
+            }
+
             var path = await agents.GetPath("1").ConfigureAwait(false);
 
             var selfies = services.GetRequiredService<ISelfie>();

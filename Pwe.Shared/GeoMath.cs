@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Pwe.Shared
 {
@@ -30,36 +31,42 @@ namespace Pwe.Shared
         }
     }
 
-    // Google Polyline Encode
-    //public static string Encode(IEnumerable<GeoLocation> points)
+    //public static GeoCoord LerpPath(List<GeoCoord> path, double t)
     //{
-    //    var str = new StringBuilder();
+    //    var polyLineMs = msEnd - msBegin;
 
-    //    var encodeDiff = (Action<int>)(diff => {
-    //        int shifted = diff << 1;
-    //        if (diff < 0)
-    //            shifted = ~shifted;
-    //        int rem = shifted;
-    //        while (rem >= 0x20)
-    //        {
-    //            str.Append((char)((0x20 | (rem & 0x1f)) + 63));
-    //            rem >>= 5;
-    //        }
-    //        str.Append((char)(rem + 63));
-    //    });
-
-    //    int lastLat = 0;
-    //    int lastLng = 0;
-    //    foreach (var point in points)
+    //    if (t > 0.95 && !pathRequested)
     //    {
-    //        int lat = (int)Math.Round(point.Lat * 1E5);
-    //        int lng = (int)Math.Round(point.Lon * 1E5);
-    //        encodeDiff(lat - lastLat);
-    //        encodeDiff(lng - lastLng);
-    //        lastLat = lat;
-    //        lastLng = lng;
+    //        console.log("Getting path, t = " + t);
+    //        updatePath();
     //    }
-    //    return str.ToString();
+
+    //    var distT = agent.PolyLineTotalLength * t;
+
+    //    // Find the correct segment
+    //    var i;
+    //    for (i = agent.LastPathIdx; i < agent.PolyLineSummedDistances.length - 1; i++)
+    //    {
+    //        if (agent.PolyLineSummedDistances[i] > distT)
+    //            break;
+    //    }
+
+    //    // i is now one too far.
+    //    i--;
+    //    agent.LastPathIdx = i;
+    //    var seg0 = agent.PolyLine[i + 0];
+    //    var seg1 = agent.PolyLine[i + 1];
+    //    var t0 = agent.PolyLineSummedDistances[i + 0] / agent.PolyLineTotalLength;
+    //    var t1 = agent.PolyLineSummedDistances[i + 1] / agent.PolyLineTotalLength;
+    //    var segT = (t - t0) * 1 / (t1 - t0);
+    //    var interpolated = google.maps.geometry.spherical.interpolate(seg0, seg1, segT);
+    //    marker.setLatLng([interpolated.lat(), interpolated.lng()]);
+
+    //    if (isFirstPathLoad)
+    //    {
+    //        isFirstPathLoad = false;
+    //        mymap.setView([interpolated.lat(), interpolated.lng()], 14);
+    //    }
     //}
 
 }
