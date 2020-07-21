@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
+using Pwe.GeoJson;
 using Pwe.MapAgents;
 using Pwe.OverpassTiles;
 using Pwe.Shared;
@@ -20,58 +21,44 @@ namespace Cmd
 {
     class Program
     {
-        // TODO:
-        // When entering new tile, update coverage map (service bus or directly? Multiple layers? Use ImageSharp on PNG?)
-        // Selfie address, maybe write on image?
-
         static async Task Main(string[] _)
         {
-            var tokens = Tokens.Create("---", "---", "---", "---");
-
             var services = BuildServiceProvider();
+            var config = services.GetRequiredService<IConfiguration>();
+            var tokens = Tokens.Create(config["TwitterConsumerKey"], config["TwitterConsumerSecret"], config["TwitterAccessToken"], config["TwitterAccessSecret"]);
+
             var blobs = services.GetRequiredService<IBlobStoreService>();
 
-            var img = new Image<L8>(64, 64);
-            for (int i = 0; i < 32; ++i)
-                img[i, i] = new L8(255);
+            //var img = new Image<L8>(64, 64);
+            //for (int i = 0; i < 32; ++i)
+            //    img[i, i] = new L8(255);
 
-            img.Save("c:\\temp\\coverage.png");
+            //img.Save("c:\\temp\\coverage.png");
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
-
-            var jsonClientPath = await agents.GetAgentClientPath("1").ConfigureAwait(false);
-            var clientPath = JsonSerializer.Deserialize<AgentClientPath>(jsonClientPath);
-            var parsed = ParsedClientPath.Create(clientPath);
-            while (true)
-            {
-                parsed.SetTime(GeoMath.UnixMs());
-                Console.WriteLine($"T: {parsed.T}, timeLeft: {parsed.TimeRemaining}");
-                await Task.Delay(500);
-            }
-
             var path = await agents.GetPath("1").ConfigureAwait(false);
 
             var selfies = services.GetRequiredService<ISelfie>();
             var locationInfo = services.GetRequiredService<ILocationInformation>();
 
-            var (image, location) = await selfies.Take(path.Points);
-            if (image != null)
-            {
-                string info = await locationInfo.GetInformation(location);
-                image.Save($"c:\\temp\\selfie {info}.png");
-                var memStream = new MemoryStream();
-                image.SaveAsPng(memStream);
-                memStream.Position = 0;
+            //var (image, location) = await selfies.Take(path.Points);
+            //if (image != null)
+            //{
+            //    string info = await locationInfo.GetInformation(location);
+            //    image.Save($"c:\\temp\\selfie {info}.png");
+            //    var memStream = new MemoryStream();
+            //    image.SaveAsPng(memStream);
+            //    memStream.Position = 0;
 
-                //await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, display_coordinates: true).ConfigureAwait(false);
+            //    //await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, display_coordinates: true).ConfigureAwait(false);
 
-                var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
-                var media = new List<long> { uploadResult.MediaId };
-                await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
-            }
+            //    var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
+            //    var media = new List<long> { uploadResult.MediaId };
+            //    await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
+            //}
 
-            //await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
-            //string geoJson = GeoJsonBuilder.AgentPath(path);
+            await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
+            string geoJson = GeoJsonBuilder.AgentPath(path);
             Console.WriteLine("All done.");
         }
 

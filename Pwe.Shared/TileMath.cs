@@ -28,6 +28,14 @@ namespace Pwe.Shared
             return tileX + (tileY << 32);
         }
 
+        //public static (long coverageId, int x, int y) GetCoverageInfo(long tileId)
+        //{
+        //    const 
+        //    long tileX = (tileId & 0xffffffff);
+        //    tileX >>= 2:
+        //    long tileY = (tileId >> 32);
+        //}
+
         public static long GetTileId(double lon, double lat, int zoom)
         {
             var (tileX, tileY) = WorldToTilePos(lon, lat, zoom);

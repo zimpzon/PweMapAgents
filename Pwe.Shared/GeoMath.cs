@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Pwe.Shared
 {
@@ -8,10 +7,38 @@ namespace Pwe.Shared
         static public long UnixMs()
             => (long)(DateTime.UtcNow - DateTime.UnixEpoch).TotalMilliseconds;
 
-        static public double MetersDistanceTo(GeoCoord p0, GeoCoord p1)
+        public static double MetersDistanceTo(GeoCoord p0, GeoCoord p1)
             => MetersDistanceTo(p0.Lon, p0.Lat, p1.Lon, p1.Lat);
 
-        static public double MetersDistanceTo(double lon0, double lat0, double lon1, double lat1)
+        static double DegToRad(double deg)
+            => (deg * Math.PI / 180);
+
+        static double RadToDeg(double rad)
+         => (rad * 180 / Math.PI);
+
+        static double Lerp(double a, double b, double t)
+            => (b - a) * t + a;
+
+        public static GeoCoord Interpolate(GeoCoord p0, GeoCoord p1, double t)
+        {
+            return new GeoCoord(Lerp(p0.Lon, p1.Lon, t), Lerp(p0.Lat, p1.Lat, t));
+        }
+
+        public static double CalculateBearing(GeoCoord startPoint, GeoCoord endPoint)
+        {
+            double lat1 = DegToRad(startPoint.Lat);
+            double lat2 = DegToRad(endPoint.Lat);
+            double deltaLon = DegToRad(endPoint.Lon - startPoint.Lon);
+
+            double y = Math.Sin(deltaLon) * Math.Cos(lat2);
+            double x = Math.Cos(lat1) * Math.Sin(lat2) - Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(deltaLon);
+            double bearing = Math.Atan2(y, x);
+
+            // since atan2 returns a value between -180 and +180, we need to convert it to 0 - 360 degrees
+            return (RadToDeg(bearing) + 360) % 360;
+        }
+
+        public static double MetersDistanceTo(double lon0, double lat0, double lon1, double lat1)
         {
             double rlat1 = Math.PI * lat0 / 180;
             double rlat2 = Math.PI * lat1 / 180;
@@ -30,43 +57,4 @@ namespace Pwe.Shared
             return dist * 1000;
         }
     }
-
-    //public static GeoCoord LerpPath(List<GeoCoord> path, double t)
-    //{
-    //    var polyLineMs = msEnd - msBegin;
-
-    //    if (t > 0.95 && !pathRequested)
-    //    {
-    //        console.log("Getting path, t = " + t);
-    //        updatePath();
-    //    }
-
-    //    var distT = agent.PolyLineTotalLength * t;
-
-    //    // Find the correct segment
-    //    var i;
-    //    for (i = agent.LastPathIdx; i < agent.PolyLineSummedDistances.length - 1; i++)
-    //    {
-    //        if (agent.PolyLineSummedDistances[i] > distT)
-    //            break;
-    //    }
-
-    //    // i is now one too far.
-    //    i--;
-    //    agent.LastPathIdx = i;
-    //    var seg0 = agent.PolyLine[i + 0];
-    //    var seg1 = agent.PolyLine[i + 1];
-    //    var t0 = agent.PolyLineSummedDistances[i + 0] / agent.PolyLineTotalLength;
-    //    var t1 = agent.PolyLineSummedDistances[i + 1] / agent.PolyLineTotalLength;
-    //    var segT = (t - t0) * 1 / (t1 - t0);
-    //    var interpolated = google.maps.geometry.spherical.interpolate(seg0, seg1, segT);
-    //    marker.setLatLng([interpolated.lat(), interpolated.lng()]);
-
-    //    if (isFirstPathLoad)
-    //    {
-    //        isFirstPathLoad = false;
-    //        mymap.setView([interpolated.lat(), interpolated.lng()], 14);
-    //    }
-    //}
-
 }

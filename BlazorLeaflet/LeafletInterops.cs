@@ -57,6 +57,9 @@ namespace BlazorLeaflet
             DisposeLayerReference(layerId);
         }
 
+        public static ValueTask UpdateMarker(IJSRuntime jsRuntime, string mapId, Marker marker, double lat, double lon) =>
+            jsRuntime.InvokeVoidAsync($"{_BaseObjectContainer}.updateMarker", mapId, marker.Id, lat, lon);
+    
         public static ValueTask UpdatePopupContent(IJSRuntime jsRuntime, string mapId, Layer layer) =>
             jsRuntime.InvokeVoidAsync($"{_BaseObjectContainer}.updatePopupContent", mapId, layer.Id, layer.Popup?.Content);
 

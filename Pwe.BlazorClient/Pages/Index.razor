@@ -1,14 +1,10 @@
 ﻿@page "/"
-@using System.Drawing
-@using BlazorLeaflet
-@using BlazorLeaflet.Models
 @using System.Net.Http
 @inject HttpClient Http
 @inject IJSRuntime jsRuntime
 @implements IDisposable
 
-<div style="height: 500px; width: 500px;">
-    <LeafletMap Map="_map" />
+<div id="map" style="height: 500px; width: 500px;">
 </div>
 <br />
 T: @($"{_parsedClientPath.T:0.00000}")
@@ -17,43 +13,59 @@ TimeLeft: @_parsedClientPath.TimeRemaining
 @code
 {
     enum PathStatus { Null, Traversing, LoadingNext, };
+    const int TimerTickMs = 16;
 
-    private Map _map;
+    private bool _mapInitialized;
+    private PathStatus _pathStatus = PathStatus.Null;
+    private bool _isZooming;
     private Pwe.Shared.AgentClientPath _path;
     private Pwe.Shared.ParsedClientPath _parsedClientPath = new Pwe.Shared.ParsedClientPath();
-    private Circle _circle;
     private System.Threading.Timer _tickTimer;
-    private PathStatus _pathStatus = PathStatus.Null;
     private double _pathT;
 
     public void Dispose()
     {
+        _tickTimer.Dispose();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JsInterop.InitMap(jsRuntime, mapId: "map");
+            _mapInitialized = true;
+        }
     }
 
     protected override async Task OnInitializedAsync()
     {
-        _map = new Map(jsRuntime)
-        {
-            Center = _startAt,
-            Zoom = 4.8f
-        };
-
-        _map.OnInitialized += OnMapReady;
+        JsInterop.OnMapZoomBegin = OnMapZoomBegin;
+        JsInterop.OnMapZoomEnd = OnMapZoomEnd;
 
         _tickTimer = new System.Threading.Timer((_) =>
         {
             Tick();
-        }, null, 100, 0);
+        }, null, TimerTickMs, 0);
 
         await UpdatePath();
         await Task.CompletedTask;
     }
 
+    private void OnMapZoomBegin()
+    {
+        _isZooming = true;
+    }
+
+    private void OnMapZoomEnd()
+    {
+        _isZooming = false;
+    }
+
     private void Tick()
     {
-        if (_pathStatus == PathStatus.Null)
+        if (_pathStatus == PathStatus.Null || !_mapInitialized || _isZooming)
         {
-            _tickTimer.Change(100, 0);
+            _tickTimer.Change(TimerTickMs, 0);
             return;
         }
 
@@ -62,13 +74,15 @@ TimeLeft: @_parsedClientPath.TimeRemaining
         _pathT = _parsedClientPath.T;
         base.StateHasChanged();
 
+        JsInterop.UpdateMarker(jsRuntime, _parsedClientPath.Position.Lat, _parsedClientPath.Position.Lon);
+
         if (_parsedClientPath.T >= 1.0)
         {
             _pathStatus = PathStatus.LoadingNext;
             InvokeAsync(() => UpdatePath());
         }
 
-        _tickTimer.Change(16, 0);
+        _tickTimer.Change(TimerTickMs, 0);
     }
 
     private async Task UpdatePath()
@@ -76,50 +90,10 @@ TimeLeft: @_parsedClientPath.TimeRemaining
         var jsonPath = await Http.GetStringAsync("https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-clientpath.json?sv=2019-02-02&st=2020-07-14T11%3A06%3A00Z&se=2030-07-15T11%3A06%3A00Z&sr=b&sp=r&sig=rVzcJjXwrpfk6zPnbZ1jeoBmjzjZ7nLyHHmyAGpW2XU%3D");
         _path = System.Text.Json.JsonSerializer.Deserialize<Pwe.Shared.AgentClientPath>(jsonPath);
         _parsedClientPath = Pwe.Shared.ParsedClientPath.Create(_path);
+        if (_pathStatus == PathStatus.Null)
+        {
+            JsInterop.SetView(jsRuntime, _parsedClientPath.Points[0].Lat, _parsedClientPath.Points[0].Lon, zoom: 14);
+        }
         _pathStatus = PathStatus.Traversing;
     }
-
-    private void OnMapReady()
-    {
-        _map.AddLayer(new TileLayer
-        {
-            UrlTemplate = "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            Attribution = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
-        });
-
-        _map.AddLayer(new Polygon
-        {
-            Shape = new[]
-            { new[] { new PointF(37f, -109.05f), new PointF(41f, -109.03f), new PointF(41f, -102.05f), new PointF(37f, -102.04f) } },
-            Fill = true,
-            FillColor = Color.Blue,
-            Popup = new Popup
-            {
-                Content = "How are you doing,"
-            }
-        });
-
-        _map.AddLayer(new BlazorLeaflet.Models.Rectangle
-        {
-            Shape = new RectangleF(10f, 0f, 5f, 1f)
-        });
-
-        _circle = new Circle
-        {
-            Position = new LatLng(10f, 5f),
-            Radius = 10f
-        };
-        _map.AddLayer(_circle);
-    }
-
-    private LatLng _startAt = new LatLng(47.5574007f, 16.3918687f);
-
-    private void ZoomMap()
-    {
-        _map.FitBounds(new PointF(45.943f, 24.967f), new PointF(46.943f, 25.967f), maxZoom: 5f);
-    }
-
-    private void PanToNY()
-    {
-        _map.PanTo(new PointF(40.713185f, -74.0072333f), animate: true, duration: 10f);
-    } }
+}

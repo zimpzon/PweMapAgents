@@ -77,7 +77,8 @@ namespace Pwe.MapAgents
             {
                 if (oldPath.PointAbsTimestampMs[i] >= pathUnixMs)
                 {
-                    newPath.PointAbsTimestampMs.Add(oldPath.PointAbsTimestampMs[i]);
+                    pathUnixMs = oldPath.PointAbsTimestampMs[i];
+                    newPath.PointAbsTimestampMs.Add(pathUnixMs);
                     newPath.Points.Add(oldPath.Points[i]);
                     long msCurrent = oldPath.PointAbsTimestampMs[i];
                     if (msPrev != -1)
@@ -99,7 +100,7 @@ namespace Pwe.MapAgents
             var startPoint = newPath.Points.Last();
             var startNode = await _worldGraph.GetNearbyNode(startPoint).ConfigureAwait(false);
 
-            List<WayTileNode> conn = await _worldGraph.GetNodeConnections(startNode).ConfigureAwait(false);
+            List<WayTileNode> conn = null;
             WayTileNode prevNode = null;
             WayTileNode node = startNode;
             WayTileNode nextNode = null;
@@ -109,11 +110,13 @@ namespace Pwe.MapAgents
 
                 long minCount = conn.Min(n => (long)n.VisitCount);
                 var leastVisited = conn.Where(n => n.VisitCount == minCount).ToList();
+                if (leastVisited.Count > 1)
+                {
+                    // Prefer not going back. Dead end simulation (moving from right to left): 0...0...1 -> 0...1...1 -> 1...1...1 -> 1...2...1 -> 50% chance of going back to dead end.
+                    leastVisited.Remove(prevNode);
+                }
+
                 nextNode = leastVisited[_rnd.Next(leastVisited.Count)];
-
-                if (pathMs >= 60 * 10 * 1000) // 10 minutes per path
-                    break;
-
                 prevNode = node;
                 node = nextNode;
 
@@ -124,6 +127,9 @@ namespace Pwe.MapAgents
                 newPath.PointAbsTimestampMs.Add(pathUnixMs);
                 pathMeters += segmentMeters;
                 pathMs += segmentMs;
+
+                if (pathMs >= 60 * 10 * 1000) // 10 minutes per path
+                    break;
             }
 
             await _worldGraph.StoreUpdatedVisitCounts().ConfigureAwait(false);

@@ -78,6 +78,14 @@ window.leafletBlazor = {
         addLayer(mapId, mkr, marker.id);
         setTooltipAndPopupIfDefined(marker, mkr);
     },
+    updateMarker: function (mapId, marker, lat, lon) {
+        console.log('1');
+        let layer = layers[mapId].find(l => l.id === marker);
+        if (layer !== undefined) {
+            console.log([lat, lon]);
+            layer.setLatLng([lat, lon]);
+        }
+    },
     addPolyline: function (mapId, polyline, objectReference) {
         const layer = L.polyline(shapeToLatLngArray(polyline.shape), createPolyline(polyline));
         addLayer(mapId, layer, polyline.id);

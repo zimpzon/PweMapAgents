@@ -9,6 +9,9 @@
             Lat = lat;
         }
 
+        public override string ToString()
+            => $"[{Lat:0.0000000}, {Lon:0.0000000}]";
+
         public double Lon { get; set; }
         public double Lat { get; set; }
     }

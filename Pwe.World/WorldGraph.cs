@@ -37,7 +37,12 @@ namespace Pwe.World
         {
             // If node is outside bounds load the linked tile
             if (!node.Inside.HasValue)
+            {
                 await LoadTileAtPoint(node.Point);
+
+                // If node was a link to a new tile the id will now be replaced in the LUT, but the "real" node.
+                node = _nodeLut[node.Id];
+            }
 
             node.VisitCount++;
             return node.Conn.Select(id => _nodeLut[id]).ToList();
