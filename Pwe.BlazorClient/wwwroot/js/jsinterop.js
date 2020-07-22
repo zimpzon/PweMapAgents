@@ -2,15 +2,25 @@
 var isZooming;
 var icon;
 var marker;
+var mapTileLayer;
+var coverageTileLayer;
 
 window.debuglog = (msg) => { console.log(msg); }
 
 window.initMap = (mapId) => {
     map = L.map(mapId);
-    L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    mapTileLayer = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-        maxZoom: 17,
+        maxZoom: 16,
         id: 'OSM'
+    }).addTo(map);
+
+    coverageTileLayer = L.tileLayer('https://maps0pwe0sa.blob.core.windows.net/maps/coveragetiles/{x}-{y}-{z}.png', {
+        attribution: '...',
+        maxZoom: 16,
+        transparent: true,
+        className: 'coveragelayer',
+        id: 'COVRERAGELAYER'
     }).addTo(map);
 
     icon = L.icon({

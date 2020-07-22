@@ -50,7 +50,6 @@ namespace Pwe.World
 
         void OnTileFirstVisit(long tileId)
         {
-            // Update coverage image(s)
         }
 
         public async Task StoreTileVisits(List<TileVisits> tileVisits)

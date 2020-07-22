@@ -30,6 +30,7 @@ namespace Pwe.MapAgents.Fa
             services.AddTransient<IStreetView, GoogleStreetView>();
             services.AddTransient<ISelfie, Selfie>();
             services.AddTransient<ILocationInformation, LocationInformation>();
+            services.AddTransient<IMapCoverage, MapCoverage>();
         }
     }
 }

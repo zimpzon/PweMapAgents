@@ -17,13 +17,15 @@ namespace Pwe.MapAgents
         private readonly ILogger _logger;
         private readonly IWorldGraph _worldGraph;
         private readonly IBlobStoreService _blobStoreService;
+        private readonly IMapCoverage _mapCoverage;
         private readonly Random _rnd = new Random();
 
-        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph, IBlobStoreService blobStoreService)
+        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph, IBlobStoreService blobStoreService, IMapCoverage mapCoverage)
         {
             _logger = logger;
             _worldGraph = worldGraph;
             _blobStoreService = blobStoreService;
+            _mapCoverage = mapCoverage;
         }
 
         //var ag = new MapAgent
@@ -72,6 +74,7 @@ namespace Pwe.MapAgents
             double pathMeters = 0;
 
             // Keep all points that are in the future
+            List<GeoCoord> visitedPoints = new List<GeoCoord>();
             long msPrev = -1;
             for (int i = 0; i < oldPath.PointAbsTimestampMs.Count; ++i)
             {
@@ -88,7 +91,12 @@ namespace Pwe.MapAgents
                     }
                     msPrev = msCurrent;
                 }
+                else
+                {
+                    visitedPoints.Add(oldPath.Points[i]);
+                }
             }
+            await _mapCoverage.UpdateCoverage(visitedPoints).ConfigureAwait(false);
 
             if (newPath.Points.Count == 0)
             {
@@ -134,7 +142,6 @@ namespace Pwe.MapAgents
 
             await _worldGraph.StoreUpdatedVisitCounts().ConfigureAwait(false);
 
-            newPath.PathMeters = 0; // pathMeters; - missing the remaining old path
             newPath.PathMs = pathMs;
             newPath.TileIds = _worldGraph.GetLoadedTiles().Select(tile => tile.Id).ToList();
             newPath.EncodedPolyline = GooglePolylineConverter.Encode(newPath.Points);

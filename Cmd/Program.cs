@@ -29,17 +29,15 @@ namespace Cmd
 
             var blobs = services.GetRequiredService<IBlobStoreService>();
 
-            //var img = new Image<L8>(64, 64);
-            //for (int i = 0; i < 32; ++i)
-            //    img[i, i] = new L8(255);
-
-            //img.Save("c:\\temp\\coverage.png");
-
             var agents = services.GetRequiredService<IMapAgentLogic>();
-            var path = await agents.GetPath("1").ConfigureAwait(false);
+            await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
 
-            var selfies = services.GetRequiredService<ISelfie>();
-            var locationInfo = services.GetRequiredService<ILocationInformation>();
+            var path = await agents.GetPath("1").ConfigureAwait(false);
+            var cvg = services.GetRequiredService<IMapCoverage>();
+            await cvg.UpdateCoverage(path.Points);
+
+            //var selfies = services.GetRequiredService<ISelfie>();
+            //var locationInfo = services.GetRequiredService<ILocationInformation>();
 
             //var (image, location) = await selfies.Take(path.Points);
             //if (image != null)
@@ -57,7 +55,6 @@ namespace Cmd
             //    await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
             //}
 
-            await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
             string geoJson = GeoJsonBuilder.AgentPath(path);
             Console.WriteLine("All done.");
         }
@@ -93,6 +90,7 @@ namespace Cmd
             services.AddTransient<IStreetView, GoogleStreetView>();
             services.AddTransient<ISelfie, Selfie>();
             services.AddTransient<ILocationInformation, LocationInformation>();
+            services.AddTransient<IMapCoverage, MapCoverage>();
         }
     }
 }

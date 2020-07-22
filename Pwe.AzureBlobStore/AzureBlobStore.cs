@@ -66,6 +66,11 @@ namespace Pwe.AzureBloBStore
             await InternalStoreBlobAsync(path, bytes, overwriteExisting);
         }
 
+        public async Task StoreBytes(string path, byte[] bytes, bool overwriteExisting = true)
+        {
+            await InternalStoreBlobAsync(path, bytes, overwriteExisting);
+        }
+
         public async Task<IEnumerable<string>> GetBlobsInFolder(string path, bool includeSubfolders = false, bool returnFullPath = false)
         {
             CloudBlobDirectory directory = _container.GetDirectoryReference(path);
@@ -98,6 +103,7 @@ namespace Pwe.AzureBloBStore
             if (!overwriteExisting && await blockBlob.ExistsAsync())
                 throw new ArgumentException($"Path already exists: {path}");
 
+            blockBlob.Properties.CacheControl = "max-age=60"; // browser cache time in seconds
             await blockBlob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
         }
 

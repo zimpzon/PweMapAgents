@@ -55,16 +55,7 @@ namespace Pwe.MapAgents
             cactusImg.Mutate(x => x.Rotate(agentRotation));
             cactusImg.Mutate(x => x.Saturate(0.8f));
 
-            Image<Rgba32> dstImg;
-            try
-            {
-                dstImg = Image.Load(pictureBytes);
-            }
-            catch(Exception e)
-            {
-                _logger.LogInformation($"Error loading streetview data from Google: {e}");
-                return null;
-            }
+            Image<Rgba32> dstImg = Image.Load(pictureBytes);
             var dstSize = dstImg.Size();
 
             // Get average luminance for the area around agent

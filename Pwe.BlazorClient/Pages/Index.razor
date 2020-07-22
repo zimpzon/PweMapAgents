@@ -4,11 +4,13 @@
 @inject IJSRuntime jsRuntime
 @implements IDisposable
 
-<div id="map" style="height: 500px; width: 500px;">
+<div id="map" style="height: 600px; width: 600px;">
 </div>
 <br />
 T: @($"{_parsedClientPath.T:0.00000}")
 TimeLeft: @_parsedClientPath.TimeRemaining
+
+<img src="https://maps0pwe0sa.blob.core.windows.net/maps/coveragetiles/547-318-10.png" class="coveragelayer"/>
 
 @code
 {

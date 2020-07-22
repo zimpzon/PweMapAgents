@@ -21,27 +21,31 @@ namespace Pwe.Shared
             return (lon, lat);
         }
 
-        public static long GetTileNeighborId(long tileId, int offsetX, int offsetY)
+        public static (long tileX, long tileY) TileIdToXy(long tileId)
         {
-            long tileX = (tileId & 0xffffffff) + offsetX;
-            long tileY = (tileId >> 32) + offsetY;
+            long tileX = tileId & 0xffffffff;
+            long tileY = tileId >> 32;
+            return (tileX, tileY);
+        }
+
+        public static long TileXyToId(long tileX, long tileY)
+        {
             return tileX + (tileY << 32);
         }
 
-        //public static (long coverageId, int x, int y) GetCoverageInfo(long tileId)
-        //{
-        //    const 
-        //    long tileX = (tileId & 0xffffffff);
-        //    tileX >>= 2:
-        //    long tileY = (tileId >> 32);
-        //}
+        public static long GetTileNeighborId(long tileId, int offsetX, int offsetY)
+        {
+            (long tileX, long tileY) = TileIdToXy(tileId);
+
+            tileX += offsetX;
+            tileY += offsetY;
+            return TileXyToId(tileX, tileY);
+        }
 
         public static long GetTileId(double lon, double lat, int zoom)
         {
             var (tileX, tileY) = WorldToTilePos(lon, lat, zoom);
-            long x = (long)tileX;
-            long y = (long)tileY;
-            return x + (y << 32);
+            return TileXyToId((long)tileX, (long)tileY);
         }
 
         public static bool IsInsideBounds(double lon, double lat, (double lon0, double lat0, double lon1, double lat1) bounds)
@@ -49,8 +53,7 @@ namespace Pwe.Shared
 
         public static (double lon0, double lat0, double lon1, double lat1) GetTileBounds(long tileId, int zoom)
         {
-            long tileX = (tileId & 0xffffffff);
-            long tileY = (tileId >> 32);
+            (long tileX, long tileY) = TileIdToXy(tileId);
             var topLeft = TileToWorldPos(tileX, tileY, zoom);
             var bottomRight = TileToWorldPos(tileX + 1, tileY + 1, zoom);
             return (topLeft.lon, topLeft.lat, bottomRight.lon, bottomRight.lat);
