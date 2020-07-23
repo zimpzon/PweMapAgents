@@ -20,7 +20,7 @@ namespace Pwe.World
         public async Task UpdateCoverage(List<GeoCoord> points)
         {
             const int LayerMin = 2;
-            const int LayerMax = 16;
+            const int LayerMax = 17;
 
             Dictionary<string, Image<Rgba32>> imageCache = new Dictionary<string, Image<Rgba32>>();
 
@@ -53,6 +53,19 @@ namespace Pwe.World
             Rgba32 pixel = new Rgba32(0, 255, 0, 255);
             for (int zoom = LayerMin; zoom <= LayerMax; ++zoom)
             {
+                int x0 = 0;
+                int y0 = 0;
+                int x1 = 0;
+                int y1 = 0;
+                if (zoom >= 16)
+                {
+                    x0 = -1; x1 = 1; y0 = -1; y1 = 1;
+                }
+                else if (zoom >= 14)
+                {
+                    x0 = 0; x1 = 1; y0 = 0; y1 = 1;
+                }
+
                 for (int i = 0; i < points.Count - 1; ++i)
                 {
                     var p0 = points[i];
@@ -69,14 +82,15 @@ namespace Pwe.World
                         string imageName = $"{tileX}-{tileY}-{zoom}.png";
                         var image = await getImage(imageName);
 
-                        int x0 = localX;
-                        int y0 = localY;
-                        int x1 = localX == 255 ? 255 : localX + 1;
-                        int y1 = localY == 255 ? 255 : localY + 1;
-                        image[x0, y0] = pixel;
-                        image[x1, y0] = pixel;
-                        image[x1, y1] = pixel;
-                        image[x0, y1] = pixel;
+                        for (int y = y0; y <= y1; ++y)
+                        {
+                            for (int x = x0; x <= x1; ++x)
+                            {
+                                int dstX = System.Math.Clamp(localX + x, 0, 255);
+                                int dstY = System.Math.Clamp(localY + y, 0, 255);
+                                image[dstX, dstY] = pixel;
+                            }
+                        }
                     }
                     await GeoMath.Line(p0PixelPos.x, p0PixelPos.y, p1PixelPos.x, p1PixelPos.y, SetPixel);
                 }

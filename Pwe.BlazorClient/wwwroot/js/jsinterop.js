@@ -9,19 +9,32 @@ window.debuglog = (msg) => { console.log(msg); }
 
 window.initMap = (mapId) => {
     map = L.map(mapId);
-    mapTileLayer = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    mapTileLayer = L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-        maxZoom: 16,
+        maxZoom: 17,
         id: 'OSM'
     }).addTo(map);
 
     coverageTileLayer = L.tileLayer('https://maps0pwe0sa.blob.core.windows.net/maps/coveragetiles/{x}-{y}-{z}.png', {
-        attribution: '...',
-        maxZoom: 16,
+        attribution: null,
+        maxZoom: 17,
         transparent: true,
+        zoomOffset: 0,
+        tileSize: 256,
         className: 'coveragelayer',
         id: 'COVRERAGELAYER'
     }).addTo(map);
+
+    var overlayMap = {
+        "Kort": mapTileLayer
+    };
+
+    var overlayCoverage = {
+        "Kort": mapTileLayer,
+        "Udforsket": coverageTileLayer
+    };
+
+    L.control.layers(null, overlayCoverage).addTo(map);
 
     icon = L.icon({
         iconUrl: 'cactus.png',

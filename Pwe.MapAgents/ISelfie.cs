@@ -7,6 +7,8 @@ namespace Pwe.MapAgents
 {
     public interface ISelfie
     {
+        Task<bool> IsSelfiePending(int maxPerDay = 3);
+        Task MarkPendingSelfieTaken();
         Task<(Image image, GeoCoord location)> Take(List<GeoCoord> path);
     }
 }

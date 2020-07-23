@@ -33,27 +33,26 @@ namespace Cmd
             await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
 
             var path = await agents.GetPath("1").ConfigureAwait(false);
-            var cvg = services.GetRequiredService<IMapCoverage>();
-            await cvg.UpdateCoverage(path.Points);
 
-            //var selfies = services.GetRequiredService<ISelfie>();
-            //var locationInfo = services.GetRequiredService<ILocationInformation>();
+            var selfies = services.GetRequiredService<ISelfie>();
+            var locationInfo = services.GetRequiredService<ILocationInformation>();
 
-            //var (image, location) = await selfies.Take(path.Points);
-            //if (image != null)
-            //{
-            //    string info = await locationInfo.GetInformation(location);
-            //    image.Save($"c:\\temp\\selfie {info}.png");
-            //    var memStream = new MemoryStream();
-            //    image.SaveAsPng(memStream);
-            //    memStream.Position = 0;
+            for (int i = 0; i < 10; ++i)
+            {
+                var (image, location) = await selfies.Take(path.Points);
+                if (image != null)
+                {
+                    string info = (await locationInfo.GetInformation(location)).Replace("/", "-");
+                    image.Save($"c:\\temp\\selfie {info}.png");
+                    var memStream = new MemoryStream();
+                    image.SaveAsPng(memStream);
+                    memStream.Position = 0;
 
-            //    //await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, display_coordinates: true).ConfigureAwait(false);
-
-            //    var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
-            //    var media = new List<long> { uploadResult.MediaId };
-            //    await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
-            //}
+                    //var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
+                    //var media = new List<long> { uploadResult.MediaId };
+                    //await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
+                }
+            }
 
             string geoJson = GeoJsonBuilder.AgentPath(path);
             Console.WriteLine("All done.");

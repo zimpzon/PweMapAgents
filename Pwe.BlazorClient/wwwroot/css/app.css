@@ -15,11 +15,12 @@ a, .btn-link {
 }
 
 .coveragelayer {
-    filter: hue-rotate(0deg) brightness(1.0) opacity(90%);
+    filter: hue-rotate(120deg) brightness(0.8) opacity(100%);
 }
 
 .main {
-    flex: 1;
+    display: flex;
+    justify-content: center; /* For horizontal alignment */
 }
 
 .gradient {
@@ -49,7 +50,7 @@ a, .btn-link {
     top: 0.5rem;
 }
 
-.center {
+.loading {
     margin: auto;
     position: absolute;
     top: 30%;

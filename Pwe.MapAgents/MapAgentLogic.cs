@@ -1,11 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using GoogleApis;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
-using Pwe.GeoJson;
 using Pwe.OverpassTiles;
 using Pwe.Shared;
 using Pwe.World;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -18,14 +22,23 @@ namespace Pwe.MapAgents
         private readonly IWorldGraph _worldGraph;
         private readonly IBlobStoreService _blobStoreService;
         private readonly IMapCoverage _mapCoverage;
+        private readonly ISelfie _selfie;
+        private readonly ILocationInformation _locationInformation;
+        private readonly IConfiguration _configuration;
         private readonly Random _rnd = new Random();
 
-        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph, IBlobStoreService blobStoreService, IMapCoverage mapCoverage)
+        static readonly NumberFormatInfo nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
+        static string NumberStr(double d) => d.ToString(nfi);
+
+        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph, IBlobStoreService blobStoreService, IMapCoverage mapCoverage, ISelfie selfie, ILocationInformation locationInformation, IConfiguration configuration)
         {
             _logger = logger;
             _worldGraph = worldGraph;
             _blobStoreService = blobStoreService;
             _mapCoverage = mapCoverage;
+            _selfie = selfie;
+            _locationInformation = locationInformation;
+            _configuration = configuration;
         }
 
         //var ag = new MapAgent
@@ -149,8 +162,8 @@ namespace Pwe.MapAgents
             string newPathJson = JsonSerializer.Serialize(newPath);
             await _blobStoreService.StoreText(BuildPathPath(agentId), newPathJson, overwriteExisting: true).ConfigureAwait(false);
 
-            string geoJson = GeoJsonBuilder.AgentPath(newPath);
-            await _blobStoreService.StoreText(BuildGeoJsonPathPath(agentId), geoJson, overwriteExisting: true).ConfigureAwait(false);
+            //string geoJson = GeoJsonBuilder.AgentPath(newPath);
+            //await _blobStoreService.StoreText(BuildGeoJsonPathPath(agentId), geoJson, overwriteExisting: true).ConfigureAwait(false);
 
             var clientPath = new AgentClientPath
             {
@@ -160,6 +173,40 @@ namespace Pwe.MapAgents
             };
             string clientPathJson = JsonSerializer.Serialize(clientPath);
             await _blobStoreService.StoreText(BuildClientPathPath(agentId), clientPathJson, overwriteExisting: true).ConfigureAwait(false);
+
+            await TryTakeSelfie(oldPath.Points).ConfigureAwait(false);
+        }
+
+        async Task TryTakeSelfie(List<GeoCoord> path)
+        {
+            if (await _selfie.IsSelfiePending().ConfigureAwait(false))
+            {
+                var (image, location) = await _selfie.Take(path).ConfigureAwait(false);
+                if (image == null || location == null)
+                {
+                    _logger.LogInformation("No selfie returned from selfie service, aborting");
+                    return;
+                }
+
+                string imageInfo = await _locationInformation.GetInformation(location).ConfigureAwait(false);
+                string mapUrl = $"https://www.google.com/maps/search/?api=1&query={NumberStr(location.Lat)},{NumberStr(location.Lon)}";
+                string message = $"{imageInfo}\n{mapUrl}";
+                await PostToTwitter(image, message, location).ConfigureAwait(false);
+
+                await _selfie.MarkPendingSelfieTaken().ConfigureAwait(false);
+            }
+        }
+
+        async Task PostToTwitter(Image image, string message, GeoCoord location)
+        {
+            using var memStream = new MemoryStream();
+            image.SaveAsPng(memStream);
+            memStream.Position = 0;
+
+            var tokens = CoreTweet.Tokens.Create(_configuration["TwitterConsumerKey"], _configuration["TwitterConsumerSecret"], _configuration["TwitterAccessToken"], _configuration["TwitterAccessSecret"]);
+            var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
+            var media = new List<long> { uploadResult.MediaId };
+            await tokens.Statuses.UpdateAsync(message, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
         }
     }
 }
