@@ -30,7 +30,7 @@ namespace Cmd
             var blobs = services.GetRequiredService<IBlobStoreService>();
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
-            await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
+            //await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
 
             var path = await agents.GetPath("1").ConfigureAwait(false);
 

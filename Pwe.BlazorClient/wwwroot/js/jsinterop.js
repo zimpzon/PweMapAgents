@@ -8,13 +8,13 @@ var coverageTileLayer;
 window.debuglog = (msg) => { console.log(msg); }
 
 window.initMap = (mapId) => {
-    map = L.map(mapId);
-    mapTileLayer = L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-        maxZoom: 17,
-        id: 'OSM'
-    }).addTo(map);
-
+    L.mapbox.accessToken = 'pk.eyJ1IjoiemltcG8iLCJhIjoiY2tjenVwanBtMG5lajJ1cDRhMzVuMmFvbSJ9.xQi8BmQYyjNBeCtEGLO9-A';
+    //map = L.map(mapId);
+    map = L.mapbox.map(mapId);
+    var mapLight = L.mapbox.tileLayer('mapbox.light', { maxZoom: 17, });
+    var mapDark = L.mapbox.tileLayer('mapbox.dark', { maxZoom: 17, });
+    var mapOutdoors = L.mapbox.tileLayer('mapbox.outdoors', { maxZoom: 17, }).addTo(map);
+   
     coverageTileLayer = L.tileLayer('https://maps0pwe0sa.blob.core.windows.net/maps/coveragetiles/{x}-{y}-{z}.png', {
         attribution: null,
         maxZoom: 17,
@@ -25,16 +25,17 @@ window.initMap = (mapId) => {
         id: 'COVRERAGELAYER'
     }).addTo(map);
 
-    var overlayMap = {
-        "Kort": mapTileLayer
+    var baseMaps = {
+        "Kort": mapOutdoors,
+        "Lys": mapLight,
+        "Mørk": mapDark,
     };
 
-    var overlayCoverage = {
-        "Kort": mapTileLayer,
+    var overlayMaps = {
         "Udforsket": coverageTileLayer
     };
 
-    L.control.layers(null, overlayCoverage).addTo(map);
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
 
     icon = L.icon({
         iconUrl: 'cactus.png',

@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="CoreTweet" Version="1.0.0.483" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.6" />
@@ -15,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GoogleApis\GoogleApis.csproj" />
-    <ProjectReference Include="..\Pwe.MapAgents.Fa\Pwe.MapAgents.Fa.csproj" />
     <ProjectReference Include="..\Pwe.MapAgents\Pwe.MapAgents.csproj" />
     <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
     <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
@@ -23,10 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="local.settings.json">
+    <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="appsettings.json">
+    <None Update="local.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
