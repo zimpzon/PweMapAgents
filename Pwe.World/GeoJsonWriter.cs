@@ -9,6 +9,24 @@ namespace Pwe.GeoJson
     {
         public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
+        public static string Segments(List<GeoCoord> segments)
+        {
+            var result = new GeoJsonMultiLine();
+            for (int i = 0; i < segments.Count; i += 2)
+            {
+                var p0 = segments[i];
+                var p1 = segments[i + 1];
+                var segment = new List<List<double>>
+                {
+                    new List<double> { p0.Lon, p0.Lat },
+                    new List<double> { p1.Lon, p1.Lat }
+                };
+                result.Coordinates.Add(segment);
+            }
+
+            return JsonSerializer.Serialize(result, SerializerOptions);
+        }
+
         public static string AgentPath(MapAgentPath path, bool addBoundingBoxex = true)
         {
             var result = new GeoJsonMultiLine();

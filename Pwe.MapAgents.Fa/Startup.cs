@@ -22,7 +22,7 @@ namespace Pwe.MapAgents.Fa
 
         public static void RegisterServices(IServiceCollection services)
         {
-            services.AddTransient<IWorldGraph, WorldGraph>();
+            services.AddSingleton<IWorldGraph, WorldGraph>();
             services.AddTransient<IMapAgentLogic, MapAgentLogic>();
             services.AddSingleton<IWayTileService, OverpassWayTileService>();
             services.AddSingleton<IBlobStoreService, AzureBlobStoreService>();
@@ -31,6 +31,7 @@ namespace Pwe.MapAgents.Fa
             services.AddTransient<ISelfie, Selfie>();
             services.AddTransient<ILocationInformation, LocationInformation>();
             services.AddTransient<IMapCoverage, MapCoverage>();
+            services.AddTransient<IGraphPeek, GraphPeek>();
         }
     }
 }

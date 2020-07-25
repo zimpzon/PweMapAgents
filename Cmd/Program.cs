@@ -30,7 +30,8 @@ namespace Cmd
             var blobs = services.GetRequiredService<IBlobStoreService>();
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
-            //await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
+            await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
+            return;
 
             var path = await agents.GetPath("1").ConfigureAwait(false);
 
@@ -81,7 +82,7 @@ namespace Cmd
 
         public static void RegisterServices(IServiceCollection services)
         {
-            services.AddTransient<IWorldGraph, WorldGraph>();
+            services.AddSingleton<IWorldGraph, WorldGraph>();
             services.AddTransient<IMapAgentLogic, MapAgentLogic>();
             services.AddSingleton<IWayTileService, OverpassWayTileService>();
             services.AddSingleton<IBlobStoreService, AzureBlobStoreService>();
@@ -90,6 +91,7 @@ namespace Cmd
             services.AddTransient<ISelfie, Selfie>();
             services.AddTransient<ILocationInformation, LocationInformation>();
             services.AddTransient<IMapCoverage, MapCoverage>();
+            services.AddTransient<IGraphPeek, GraphPeek>();
         }
     }
 }

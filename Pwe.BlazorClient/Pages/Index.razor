@@ -4,15 +4,12 @@
 @inject IJSRuntime jsRuntime
 @implements IDisposable
 
-    <div class="main">
-        <div id="map" style="width: 600px; height: 600px;">
+        <div id="map" style="width: 100%; height: 100%;">
         </div>
-        <br />
         @*T: @($"{_parsedClientPath.T:0.00000}")
-            TimeLeft: @_parsedClientPath.TimeRemaining*@
-    </div>
-    @code
-{
+        TimeLeft: @_parsedClientPath.TimeRemaining*@
+
+@code {
     enum PathStatus { Null, Traversing, LoadingNext, };
     const int TimerTickMs = 16;
 

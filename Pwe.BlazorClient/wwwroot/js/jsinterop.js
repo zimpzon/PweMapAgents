@@ -9,20 +9,18 @@ window.debuglog = (msg) => { console.log(msg); }
 
 window.initMap = (mapId) => {
     L.mapbox.accessToken = 'pk.eyJ1IjoiemltcG8iLCJhIjoiY2tjenVwanBtMG5lajJ1cDRhMzVuMmFvbSJ9.xQi8BmQYyjNBeCtEGLO9-A';
-    //map = L.map(mapId);
     map = L.mapbox.map(mapId);
-    var mapLight = L.mapbox.tileLayer('mapbox.light', { maxZoom: 17, });
-    var mapDark = L.mapbox.tileLayer('mapbox.dark', { maxZoom: 17, });
-    var mapOutdoors = L.mapbox.tileLayer('mapbox.outdoors', { maxZoom: 17, }).addTo(map);
+    var mapLight = L.mapbox.tileLayer('mapbox.light', { maxZoom: 16, });
+    var mapDark = L.mapbox.tileLayer('mapbox.dark', { maxZoom: 16, });
+    var mapOutdoors = L.mapbox.tileLayer('mapbox.outdoors', { maxZoom: 16, }).addTo(map);
    
     coverageTileLayer = L.tileLayer('https://maps0pwe0sa.blob.core.windows.net/maps/coveragetiles/{x}-{y}-{z}.png', {
         attribution: null,
-        maxZoom: 17,
+        maxZoom: 16,
         transparent: true,
         zoomOffset: 0,
         tileSize: 256,
         className: 'coveragelayer',
-        id: 'COVRERAGELAYER'
     }).addTo(map);
 
     var baseMaps = {

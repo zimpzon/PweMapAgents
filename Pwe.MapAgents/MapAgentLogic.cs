@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
+using Pwe.GeoJson;
 using Pwe.OverpassTiles;
 using Pwe.Shared;
 using Pwe.World;
@@ -23,6 +24,7 @@ namespace Pwe.MapAgents
         private readonly IBlobStoreService _blobStoreService;
         private readonly IMapCoverage _mapCoverage;
         private readonly ISelfie _selfie;
+        private readonly IGraphPeek _graphPeek;
         private readonly ILocationInformation _locationInformation;
         private readonly IConfiguration _configuration;
         private readonly Random _rnd = new Random();
@@ -30,7 +32,15 @@ namespace Pwe.MapAgents
         static readonly NumberFormatInfo nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
         static string NumberStr(double d) => d.ToString(nfi);
 
-        public MapAgentLogic(ILogger logger, IWorldGraph worldGraph, IBlobStoreService blobStoreService, IMapCoverage mapCoverage, ISelfie selfie, ILocationInformation locationInformation, IConfiguration configuration)
+        public MapAgentLogic(
+            ILogger logger,
+            IWorldGraph worldGraph,
+            IBlobStoreService blobStoreService,
+            IMapCoverage mapCoverage,
+            ISelfie selfie,
+            ILocationInformation locationInformation,
+            IConfiguration configuration,
+            IGraphPeek graphPeek)
         {
             _logger = logger;
             _worldGraph = worldGraph;
@@ -39,6 +49,7 @@ namespace Pwe.MapAgents
             _selfie = selfie;
             _locationInformation = locationInformation;
             _configuration = configuration;
+            _graphPeek = graphPeek;
         }
 
         //var ag = new MapAgent
@@ -61,7 +72,6 @@ namespace Pwe.MapAgents
 
         private static string BuildPathPath(string agentId) => $"agents/{agentId}-path.json";
         private static string BuildClientPathPath(string agentId) => $"agents/{agentId}-clientpath.json";
-        private static string BuildGeoJsonPathPath(string agentId) => $"agents/{agentId}-geojson.json";
 
         public async Task<string> GetAgentClientPath(string agentId)
         {
@@ -121,6 +131,9 @@ namespace Pwe.MapAgents
             var startPoint = newPath.Points.Last();
             var startNode = await _worldGraph.GetNearbyNode(startPoint).ConfigureAwait(false);
 
+            List<GeoCoord> deadEndDebugSegments = new List<GeoCoord>();
+            List<GeoCoord> possibleWayoutDebugSegments = new List<GeoCoord>();
+
             List<WayTileNode> conn = null;
             WayTileNode prevNode = null;
             WayTileNode node = startNode;
@@ -137,6 +150,36 @@ namespace Pwe.MapAgents
                     leastVisited.Remove(prevNode);
                 }
 
+                bool onlyExploredNodesToChooseFrom = minCount > 0;
+                if (onlyExploredNodesToChooseFrom && leastVisited.Count > 1)
+                {
+                    // Peek ahead at our options and skip dead ends
+                    var options = new List<WayTileNode>(leastVisited);
+                    foreach(var option in options)
+                    {
+                        var (deadEndFound, unexploredNodeFound, exploredSegments) = await _graphPeek.Peek(node, option).ConfigureAwait(false);
+                        bool fullyExploredDeadEnd = deadEndFound && !unexploredNodeFound;
+                        if (fullyExploredDeadEnd)
+                        {
+                            if (leastVisited.Count > 1)
+                            {
+                                // Remove if we have other options
+                                deadEndDebugSegments.AddRange(exploredSegments);
+                                leastVisited.Remove(option);
+                            }
+                        }
+                        bool interestingUnexploredPath = !deadEndFound && unexploredNodeFound;
+                        if (interestingUnexploredPath)
+                        {
+                            // This way is not an obvious dead end and it contains unexplored nodes. Let's go that way.
+                            leastVisited.Clear();
+                            leastVisited.Add(option);
+                            possibleWayoutDebugSegments.AddRange(exploredSegments.Take(4));
+                            break;
+                        }
+                    }
+                }
+
                 nextNode = leastVisited[_rnd.Next(leastVisited.Count)];
                 prevNode = node;
                 node = nextNode;
@@ -151,6 +194,18 @@ namespace Pwe.MapAgents
 
                 if (pathMs >= 60 * 10 * 1000) // 10 minutes per path
                     break;
+            }
+
+            if (deadEndDebugSegments.Count > 0)
+            {
+                string geo = GeoJsonBuilder.Segments(deadEndDebugSegments);
+                await _blobStoreService.StoreText($"debug/skipped-deadends/deadends-{deadEndDebugSegments.Count}-{DateTime.UtcNow.Ticks}.json", geo).ConfigureAwait(false);
+            }
+
+            if (possibleWayoutDebugSegments.Count > 0)
+            {
+                string geo = GeoJsonBuilder.Segments(possibleWayoutDebugSegments);
+                await _blobStoreService.StoreText($"debug/possible-way-out/wayout-{possibleWayoutDebugSegments.Count}-{DateTime.UtcNow.Ticks}.json", geo).ConfigureAwait(false);
             }
 
             await _worldGraph.StoreUpdatedVisitCounts().ConfigureAwait(false);

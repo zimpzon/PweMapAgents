@@ -1,60 +1,21 @@
-﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
-
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
-a, .btn-link {
-    color: #0366d6;
-}
-
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    position: absolute;
 }
 
 .coveragelayer {
     filter: hue-rotate(120deg) brightness(0.8) opacity(100%);
 }
 
-.main {
-    display: flex;
-    justify-content: center; /* For horizontal alignment */
-}
-
-.gradient {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-.content {
-    padding-top: 1.1rem;
-}
-
-#blazor-error-ui {
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
-    width: 100%;
-    z-index: 1000;
-}
-
-#blazor-error-ui .dismiss {
-    cursor: pointer;
-    position: absolute;
-    right: 0.75rem;
-    top: 0.5rem;
-}
-
 .loading {
     margin: auto;
     position: absolute;
     top: 30%;
-    left: 50%;
-    -ms-transform: translateY(-50%);
-    transform: translateY(-50%);
+    left: 40%;
+    -ms-transform: translateY(-40%);
+    transform: translateY(-40%);
 }

@@ -44,7 +44,9 @@ namespace Pwe.World
                 node = _nodeLut[node.Id];
             }
 
-            node.VisitCount++;
+            if (updateVisitCount)
+                node.VisitCount++;
+
             return node.Conn.Select(id => _nodeLut[id]).ToList();
         }
 
