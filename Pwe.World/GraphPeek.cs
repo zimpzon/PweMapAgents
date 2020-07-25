@@ -29,7 +29,7 @@ namespace Pwe.World
             _pendingList.Add(first);
 
             var explored = new List<GeoCoord>();
-            const int MaxSteps = 50;
+            const int MaxSteps = 200;
             bool unexploredNodeFound = false;
 
             int stepCount = 0;
