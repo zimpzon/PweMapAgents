@@ -10,7 +10,7 @@ window.debuglog = (msg) => { console.log(msg); }
 window.initMap = (mapId) => {
     L.mapbox.accessToken = 'pk.eyJ1IjoiemltcG8iLCJhIjoiY2tjenVwanBtMG5lajJ1cDRhMzVuMmFvbSJ9.xQi8BmQYyjNBeCtEGLO9-A';
     map = L.mapbox.map(mapId);
-    var mapLight = L.mapbox.tileLayer('mapbox.light', { maxZoom: 16, });
+    var mapLight = L.mapbox.tileLayer('mapbox.light', { maxZoom: 16,  });
     var mapDark = L.mapbox.tileLayer('mapbox.dark', { maxZoom: 16, });
     var mapOutdoors = L.mapbox.tileLayer('mapbox.outdoors', { maxZoom: 16, }).addTo(map);
    

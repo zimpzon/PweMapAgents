@@ -4,94 +4,95 @@
 @inject IJSRuntime jsRuntime
 @implements IDisposable
 
-        <div id="map" style="width: 100%; height: 100%;">
+    <div style="width: 100%; height: 100%; position: relative;">
+        <div id="map" style="width: 100%; height: 100%; max-width: 500px; max-height: 500px; position:absolute; top: 50%; left:50%; transform: translate(-50%, -50%);">
         </div>
-        @*T: @($"{_parsedClientPath.T:0.00000}")
+    </div>        @*T: @($"{_parsedClientPath.T:0.00000}")
         TimeLeft: @_parsedClientPath.TimeRemaining*@
 
-@code {
-    enum PathStatus { Null, Traversing, LoadingNext, };
-    const int TimerTickMs = 16;
+    @code {
+        enum PathStatus { Null, Traversing, LoadingNext, };
+        const int TimerTickMs = 16;
 
-    private bool _mapInitialized;
-    private PathStatus _pathStatus = PathStatus.Null;
-    private bool _isZooming;
-    private Pwe.Shared.AgentClientPath _path;
-    private Pwe.Shared.ParsedClientPath _parsedClientPath = new Pwe.Shared.ParsedClientPath();
-    private System.Threading.Timer _tickTimer;
-    private double _pathT;
+        private bool _mapInitialized;
+        private PathStatus _pathStatus = PathStatus.Null;
+        private bool _isZooming;
+        private Pwe.Shared.AgentClientPath _path;
+        private Pwe.Shared.ParsedClientPath _parsedClientPath = new Pwe.Shared.ParsedClientPath();
+        private System.Threading.Timer _tickTimer;
+        private double _pathT;
 
-    public void Dispose()
-    {
-        _tickTimer.Dispose();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
+        public void Dispose()
         {
-            JsInterop.InitMap(jsRuntime, mapId: "map");
-            _mapInitialized = true;
+            _tickTimer.Dispose();
         }
-    }
 
-    protected override async Task OnInitializedAsync()
-    {
-        JsInterop.OnMapZoomBegin = OnMapZoomBegin;
-        JsInterop.OnMapZoomEnd = OnMapZoomEnd;
-
-        _tickTimer = new System.Threading.Timer((_) =>
+        protected override void OnAfterRender(bool firstRender)
         {
-            Tick();
-        }, null, TimerTickMs, 0);
+            if (firstRender)
+            {
+                JsInterop.InitMap(jsRuntime, mapId: "map");
+                _mapInitialized = true;
+            }
+        }
 
-        await UpdatePath();
-        await Task.CompletedTask;
-    }
-
-    private void OnMapZoomBegin()
-    {
-        _isZooming = true;
-    }
-
-    private void OnMapZoomEnd()
-    {
-        _isZooming = false;
-    }
-
-    private void Tick()
-    {
-        if (_pathStatus == PathStatus.Null || !_mapInitialized || _isZooming)
+        protected override async Task OnInitializedAsync()
         {
+            JsInterop.OnMapZoomBegin = OnMapZoomBegin;
+            JsInterop.OnMapZoomEnd = OnMapZoomEnd;
+
+            _tickTimer = new System.Threading.Timer((_) =>
+            {
+                Tick();
+            }, null, TimerTickMs, 0);
+
+            await UpdatePath();
+            await Task.CompletedTask;
+        }
+
+        private void OnMapZoomBegin()
+        {
+            _isZooming = true;
+        }
+
+        private void OnMapZoomEnd()
+        {
+            _isZooming = false;
+        }
+
+        private void Tick()
+        {
+            if (_pathStatus == PathStatus.Null || !_mapInitialized || _isZooming)
+            {
+                _tickTimer.Change(TimerTickMs, 0);
+                return;
+            }
+
+            long unixMs = Pwe.Shared.GeoMath.UnixMs();
+            _parsedClientPath.SetTime(unixMs);
+            _pathT = _parsedClientPath.T;
+            base.StateHasChanged();
+
+            JsInterop.UpdateMarker(jsRuntime, _parsedClientPath.Position.Lat, _parsedClientPath.Position.Lon);
+
+            if (_parsedClientPath.T >= 1.0)
+            {
+                _pathStatus = PathStatus.LoadingNext;
+                InvokeAsync(() => UpdatePath());
+            }
+
             _tickTimer.Change(TimerTickMs, 0);
-            return;
         }
 
-        long unixMs = Pwe.Shared.GeoMath.UnixMs();
-        _parsedClientPath.SetTime(unixMs);
-        _pathT = _parsedClientPath.T;
-        base.StateHasChanged();
-
-        JsInterop.UpdateMarker(jsRuntime, _parsedClientPath.Position.Lat, _parsedClientPath.Position.Lon);
-
-        if (_parsedClientPath.T >= 1.0)
+        private async Task UpdatePath()
         {
-            _pathStatus = PathStatus.LoadingNext;
-            InvokeAsync(() => UpdatePath());
+            var jsonPath = await Http.GetStringAsync("https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-clientpath.json?sv=2019-02-02&st=2020-07-14T11%3A06%3A00Z&se=2030-07-15T11%3A06%3A00Z&sr=b&sp=r&sig=rVzcJjXwrpfk6zPnbZ1jeoBmjzjZ7nLyHHmyAGpW2XU%3D");
+            _path = System.Text.Json.JsonSerializer.Deserialize<Pwe.Shared.AgentClientPath>(jsonPath);
+            _parsedClientPath = Pwe.Shared.ParsedClientPath.Create(_path);
+            if (_pathStatus == PathStatus.Null)
+            {
+                JsInterop.SetView(jsRuntime, _parsedClientPath.Points[0].Lat, _parsedClientPath.Points[0].Lon, zoom: 14);
+            }
+            _pathStatus = PathStatus.Traversing;
         }
-
-        _tickTimer.Change(TimerTickMs, 0);
-    }
-
-    private async Task UpdatePath()
-    {
-        var jsonPath = await Http.GetStringAsync("https://maps0pwe0sa.blob.core.windows.net/maps/agents/1-clientpath.json?sv=2019-02-02&st=2020-07-14T11%3A06%3A00Z&se=2030-07-15T11%3A06%3A00Z&sr=b&sp=r&sig=rVzcJjXwrpfk6zPnbZ1jeoBmjzjZ7nLyHHmyAGpW2XU%3D");
-        _path = System.Text.Json.JsonSerializer.Deserialize<Pwe.Shared.AgentClientPath>(jsonPath);
-        _parsedClientPath = Pwe.Shared.ParsedClientPath.Create(_path);
-        if (_pathStatus == PathStatus.Null)
-        {
-            JsInterop.SetView(jsRuntime, _parsedClientPath.Points[0].Lat, _parsedClientPath.Points[0].Lon, zoom: 14);
-        }
-        _pathStatus = PathStatus.Traversing;
-    }
     }
