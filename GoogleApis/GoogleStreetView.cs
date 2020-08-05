@@ -27,7 +27,7 @@ namespace GoogleApis
             var client = new HttpClient();
             HttpResponseMessage httpRes;
 
-            httpRes = await client.GetAsync($"https://maps.googleapis.com/maps/api/streetview/metadata?&location={point.Lat},{point.Lon}&key={_apiKey}");
+            httpRes = await client.GetAsync($"https://maps.googleapis.com/maps/api/streetview/metadata?location={point.Lat},{point.Lon}&key={_apiKey}");
             string body = await httpRes.Content.ReadAsStringAsync();
             bool hasData = !body.Contains("ZERO_RESULTS");
             if (!hasData)

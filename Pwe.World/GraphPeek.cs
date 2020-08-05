@@ -1,9 +1,7 @@
-﻿using Pwe.AzureBloBStore;
-using Pwe.OverpassTiles;
+﻿using Pwe.OverpassTiles;
 using Pwe.Shared;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Pwe.World
@@ -20,7 +18,7 @@ namespace Pwe.World
             _worldGraph = worldGraph;
         }
 
-        public async Task<(bool deadEndFound, bool unexploredNodeFound, List<GeoCoord> explored)> Peek(WayTileNode root, WayTileNode first)
+        public async Task<(bool deadEndFound, bool unexploredNodeFound, long visitedNodesFound, long unvisitedNodesFound, long totalVisitCount, List<GeoCoord> explored)> Peek(WayTileNode root, WayTileNode first)
         {
             _visitedList.Clear();
             _pendingList.Clear();
@@ -31,6 +29,9 @@ namespace Pwe.World
             var explored = new List<GeoCoord>();
             const int MaxSteps = 200;
             bool unexploredNodeFound = false;
+            long visitedNodesFound = 0;
+            long unvisitedNodesFound = 0;
+            long totalVisitCount = 0;
 
             int stepCount = 0;
             while (true)
@@ -58,13 +59,17 @@ namespace Pwe.World
 
                 foreach (var conn in connections)
                 {
+                    visitedNodesFound += conn.VisitCount > 0 ? 1 : 0;
+                    unvisitedNodesFound += conn.VisitCount == 0 ? 1 : 0;
+                    totalVisitCount += conn.VisitCount ?? 0;
+
                     explored.Add(current.Point);
                     explored.Add(conn.Point);
                 }
             }
 
             bool deadEndFound = stepCount < MaxSteps;
-            return (deadEndFound, unexploredNodeFound, explored);
+            return (deadEndFound, unexploredNodeFound, visitedNodesFound, unvisitedNodesFound, totalVisitCount, explored);
         }
     }
 }

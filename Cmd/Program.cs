@@ -92,6 +92,7 @@ namespace Cmd
             services.AddTransient<ILocationInformation, LocationInformation>();
             services.AddTransient<IMapCoverage, MapCoverage>();
             services.AddTransient<IGraphPeek, GraphPeek>();
+            services.AddTransient<IPlaces, GooglePlaces>();
         }
     }
 }

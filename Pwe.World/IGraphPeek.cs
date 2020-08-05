@@ -7,6 +7,6 @@ namespace Pwe.World
 {
     public interface IGraphPeek
     {
-        Task<(bool deadEndFound, bool unexploredNodeFound, List<GeoCoord> explored)> Peek(WayTileNode root, WayTileNode first);
+        Task<(bool deadEndFound, bool unexploredNodeFound, long visitedNodesFound, long unvisitedNodesFound, long totalVisitCount, List<GeoCoord> explored)> Peek(WayTileNode root, WayTileNode first);
     }
 }

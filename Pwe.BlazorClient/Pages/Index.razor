@@ -91,7 +91,8 @@
             _parsedClientPath = Pwe.Shared.ParsedClientPath.Create(_path);
             if (_pathStatus == PathStatus.Null)
             {
-                JsInterop.SetView(jsRuntime, _parsedClientPath.Points[0].Lat, _parsedClientPath.Points[0].Lon, zoom: 14);
+                int idxMid = _parsedClientPath.Points.Count / 2;
+                JsInterop.SetView(jsRuntime, _parsedClientPath.Points[idxMid].Lat, _parsedClientPath.Points[idxMid].Lon, zoom: 13);
             }
             _pathStatus = PathStatus.Traversing;
         }

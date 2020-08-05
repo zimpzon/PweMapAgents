@@ -79,6 +79,18 @@ namespace Pwe.MapAgents
             return clientPath;
         }
 
+        private class Option
+        {
+            public WayTileNode Node { get; set; }
+            public double BearingDiff { get; set; }
+            public bool IsDeadEnd { get; set; }
+            public long VisitedCount { get; set; }
+            public long UnvisitedCount { get; set; }
+            public long TotalVisitCount { get; set; }
+            public double UnvisitedPct { get; set; }
+            public double Score { get; set; }
+        }
+
         public async Task UpdateAgent(string agentId, AgentCommand command)
         {
             _logger.LogInformation($"Updating agent {agentId}");
@@ -119,6 +131,7 @@ namespace Pwe.MapAgents
                     visitedPoints.Add(oldPath.Points[i]);
                 }
             }
+
             await _mapCoverage.UpdateCoverage(visitedPoints).ConfigureAwait(false);
 
             if (newPath.Points.Count == 0)
@@ -134,55 +147,64 @@ namespace Pwe.MapAgents
             List<GeoCoord> deadEndDebugSegments = new List<GeoCoord>();
             List<GeoCoord> possibleWayoutDebugSegments = new List<GeoCoord>();
 
+            double prevBearing = double.MaxValue;
             List<WayTileNode> conn = null;
             WayTileNode prevNode = null;
             WayTileNode node = startNode;
             WayTileNode nextNode = null;
+
             while (true)
             {
                 conn = await _worldGraph.GetNodeConnections(node).ConfigureAwait(false);
+                var options = conn.Select(x => new Option { Node = x }).ToList();
 
-                long minCount = conn.Min(n => (long)n.VisitCount);
-                var leastVisited = conn.Where(n => n.VisitCount == minCount).ToList();
-                if (leastVisited.Count > 1)
+                // Don't go back if we can go forward
+                if (options.Count > 1)
+                    options = options.Where(x => x.Node != prevNode).ToList();
+
+                foreach(var option in options)
                 {
-                    // Prefer not going back. Dead end simulation (moving from right to left): 0...0...1 -> 0...1...1 -> 1...1...1 -> 1...2...1 -> 50% chance of going back to dead end.
-                    leastVisited.Remove(prevNode);
+                    var (deadEndFound, unexploredNodeFound, visitedNodesFound, unvisitedNodesFound, totalVisitCount, exploredSegments) = await _graphPeek.Peek(node, option.Node).ConfigureAwait(false);
+                    double bearing = GeoMath.CalculateBearing(node.Point, option.Node.Point);
+                    option.BearingDiff = Math.Abs(bearing - prevBearing);
+                    option.IsDeadEnd = deadEndFound;
+                    option.UnvisitedCount = unvisitedNodesFound;
+                    option.VisitedCount = visitedNodesFound;
+                    option.TotalVisitCount = totalVisitCount;
+                    option.UnvisitedPct = visitedNodesFound == 0 ? 100 : (double)unvisitedNodesFound / visitedNodesFound;
+                    option.Score = ((unvisitedNodesFound + visitedNodesFound) / ((double)totalVisitCount + 1)) + _rnd.NextDouble() * 0.1; // Add a little randomness
                 }
 
-                bool onlyExploredNodesToChooseFrom = minCount > 0;
-                if (onlyExploredNodesToChooseFrom && leastVisited.Count > 1)
+                // Scores should reflect the direction with the most unexplored nodes. Higher = better.
+                //      If nothing was explored score = unvisitedNodesFound + visitedNodesFound
+                //      If everything was explored exactly once, score = 1. Will go below 1 when visitcount gets bigger than 1.
+                // If there are no detected unexplored areas nearby, prefer to go straight ahead to cover some ground quickly.
+                bool preferStraight = false;
+                bool onlyAlreadyExploredOptions = !options.Any(x => x.Score > 1.0);
+                if (onlyAlreadyExploredOptions)
                 {
-                    // Peek ahead at our options and skip dead ends
-                    var options = new List<WayTileNode>(leastVisited);
-                    foreach(var option in options)
+                    long minVisitCount = options.Min(x => x.Node.VisitCount ?? 0);
+                    bool allEqual = options.All(x => x.Node.VisitCount == minVisitCount);
+                    if (allEqual)
                     {
-                        var (deadEndFound, unexploredNodeFound, exploredSegments) = await _graphPeek.Peek(node, option).ConfigureAwait(false);
-                        bool fullyExploredDeadEnd = deadEndFound && !unexploredNodeFound;
-                        if (fullyExploredDeadEnd)
-                        {
-                            if (leastVisited.Count > 1)
-                            {
-                                // Remove if we have other options
-                                deadEndDebugSegments.AddRange(exploredSegments);
-                                leastVisited.Remove(option);
-                            }
-                        }
-                        bool interestingUnexploredPath = !deadEndFound && unexploredNodeFound;
-                        if (interestingUnexploredPath)
-                        {
-                            // This way is not an obvious dead end and it contains unexplored nodes. Let's go that way.
-                            leastVisited.Clear();
-                            leastVisited.Add(option);
-                            possibleWayoutDebugSegments.AddRange(exploredSegments.Take(4));
-                            break;
-                        }
+                        preferStraight = onlyAlreadyExploredOptions && _rnd.NextDouble() < 0.9;
+                    }
+                    else
+                    {
+                        // All are already explored, but some have higher count than others. Pick from nodes with lowest count.
+                        options = options.Where(x => x.Node.VisitCount == minVisitCount).ToList();
                     }
                 }
+                else
+                {
+                    // Pick best score
+                    options = options.OrderByDescending(x => x.Score).ToList();
+                }
 
-                nextNode = leastVisited[_rnd.Next(leastVisited.Count)];
+                nextNode = options[0].Node;
                 prevNode = node;
                 node = nextNode;
+                prevBearing = GeoMath.CalculateBearing(prevNode.Point, node.Point);
 
                 double segmentMeters = GeoMath.MetersDistanceTo(prevNode.Point, node.Point);
                 long segmentMs = (long)((segmentMeters / agent.MetersPerSecond) * 1000);
@@ -196,17 +218,17 @@ namespace Pwe.MapAgents
                     break;
             }
 
-            if (deadEndDebugSegments.Count > 0)
-            {
-                string geo = GeoJsonBuilder.Segments(deadEndDebugSegments);
-                await _blobStoreService.StoreText($"debug/skipped-deadends/deadends-{deadEndDebugSegments.Count}-{DateTime.UtcNow.Ticks}.json", geo).ConfigureAwait(false);
-            }
+            //if (deadEndDebugSegments.Count > 0)
+            //{
+            //    string geo = GeoJsonBuilder.Segments(deadEndDebugSegments);
+            //    await _blobStoreService.StoreText($"debug/skipped-deadends/deadends-{deadEndDebugSegments.Count}-{DateTime.UtcNow.Ticks}.json", geo).ConfigureAwait(false);
+            //}
 
-            if (possibleWayoutDebugSegments.Count > 0)
-            {
-                string geo = GeoJsonBuilder.Segments(possibleWayoutDebugSegments);
-                await _blobStoreService.StoreText($"debug/possible-way-out/wayout-{possibleWayoutDebugSegments.Count}-{DateTime.UtcNow.Ticks}.json", geo).ConfigureAwait(false);
-            }
+            //if (possibleWayoutDebugSegments.Count > 0)
+            //{
+            //    string geo = GeoJsonBuilder.Segments(possibleWayoutDebugSegments);
+            //    await _blobStoreService.StoreText($"debug/possible-way-out/wayout-{possibleWayoutDebugSegments.Count}-{DateTime.UtcNow.Ticks}.json", geo).ConfigureAwait(false);
+            //}
 
             await _worldGraph.StoreUpdatedVisitCounts().ConfigureAwait(false);
 

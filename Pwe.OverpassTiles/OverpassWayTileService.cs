@@ -26,7 +26,7 @@ namespace Pwe.OverpassTiles
         public OverpassWayTileService(ILogger logger)
         {
             _logger = logger;
-            _currentUrl = UrlSecondary; // Primary fails today -  UrlPrimary;
+            _currentUrl = UrlPrimary;
         }
 
         public async Task<WayTile> GetTile(long tileId, int zoom)
@@ -38,7 +38,7 @@ namespace Pwe.OverpassTiles
             // https://wiki.openstreetmap.org/wiki/Bounding_Box
             // The order of values in the bounding box used by Overpass API is (South, West, North, East):
             // minimum latitude, minimum longitude, maximum latitude, maximum longitude
-            string cmd = $"[out: json];way[\"highway\"]({NumberStr(bbox.lat1)}, {NumberStr(bbox.lon0)}, {NumberStr(bbox.lat0)}, {NumberStr(bbox.lon1)});out qt;node(w);out skel qt;";
+            string cmd = $"[out: json];way(if:is_tag(\"highway\") || is_tag(\"route\"))({NumberStr(bbox.lat1)}, {NumberStr(bbox.lon0)}, {NumberStr(bbox.lat0)}, {NumberStr(bbox.lon1)});out qt;node(w);out skel qt;";
             var client = new HttpClient();
             var content = new StringContent(cmd);
             OsmResponse osmResponse = null;
