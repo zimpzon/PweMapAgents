@@ -108,12 +108,16 @@ namespace Pwe.MapAgents
             long pathMs = 0;
             double pathMeters = 0;
 
-            // Keep all points that are in the future
+            // Keep all points that are in the future - and one point in the past so we can interpolate the line segment
             List<GeoCoord> visitedPoints = new List<GeoCoord>();
             long msPrev = -1;
+
             for (int i = 0; i < oldPath.PointAbsTimestampMs.Count; ++i)
             {
-                if (oldPath.PointAbsTimestampMs[i] >= pathUnixMs)
+                bool pointIsInTheFuture = oldPath.PointAbsTimestampMs[i] >= pathUnixMs;
+                bool nextPointIsInTheFuture = i < oldPath.PointAbsTimestampMs.Count - 1 && oldPath.PointAbsTimestampMs[i + 1] >= pathUnixMs;
+                bool keepPoint = pointIsInTheFuture || nextPointIsInTheFuture;
+                if (keepPoint)
                 {
                     pathUnixMs = oldPath.PointAbsTimestampMs[i];
                     newPath.PointAbsTimestampMs.Add(pathUnixMs);
@@ -131,6 +135,10 @@ namespace Pwe.MapAgents
                     visitedPoints.Add(oldPath.Points[i]);
                 }
             }
+
+            // Make sure all visited lines are drawn by adding the first kept point
+            if (newPath.Points.Count > 0)
+                visitedPoints.Add(newPath.Points[0]);
 
             await _mapCoverage.UpdateCoverage(visitedPoints).ConfigureAwait(false);
 

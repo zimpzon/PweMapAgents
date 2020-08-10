@@ -1,4 +1,5 @@
-﻿using Pwe.AzureBloBStore;
+﻿using Microsoft.Extensions.Logging;
+using Pwe.AzureBloBStore;
 using Pwe.Shared;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -11,10 +12,12 @@ namespace Pwe.World
     public class MapCoverage : IMapCoverage
     {
         private readonly IBlobStoreService _blobStoreService;
+        private readonly ILogger _logger;
 
-        public MapCoverage(IBlobStoreService blobStoreService)
+        public MapCoverage(IBlobStoreService blobStoreService, ILogger logger)
         {
             _blobStoreService = blobStoreService;
+            _logger = logger;
         }
 
         public async Task UpdateCoverage(List<GeoCoord> points)
@@ -23,6 +26,7 @@ namespace Pwe.World
             const int LayerMax = 17;
 
             Dictionary<string, Image<Rgba32>> imageCache = new Dictionary<string, Image<Rgba32>>();
+            Dictionary<string, long> pixelsChanged = new Dictionary<string, long>();
 
             async Task<Image<Rgba32>> getImage(string name)
             {
@@ -80,6 +84,8 @@ namespace Pwe.World
                         int localX = globalX & 0xff;
                         int localY = globalY & 0xff;
                         string imageName = $"{tileX}-{tileY}-{zoom}.png";
+                        pixelsChanged.TryGetValue(imageName, out long pixelChangeCount);
+
                         var image = await getImage(imageName);
 
                         for (int y = y0; y <= y1; ++y)
@@ -88,27 +94,45 @@ namespace Pwe.World
                             {
                                 int dstX = System.Math.Clamp(localX + x, 0, 255);
                                 int dstY = System.Math.Clamp(localY + y, 0, 255);
-                                image[dstX, dstY] = pixel;
+                                if (image[dstX, dstY].G != pixel.G)
+                                {
+                                    image[dstX, dstY] = pixel;
+                                    pixelChangeCount++;
+                                }
                             }
                         }
+                        pixelsChanged[imageName] = pixelChangeCount;
                     }
+
                     await GeoMath.Line(p0PixelPos.x, p0PixelPos.y, p1PixelPos.x, p1PixelPos.y, SetPixel);
                 }
             }
 
+            long imageWriteCount = 0;
+            long imageSkipCount = 0;
             foreach (var pair in imageCache)
             {
                 string imageName = pair.Key;
                 var image = pair.Value;
-
-                // Have to use temp file since image.SaveAsPng somehow didn't get all pixels in the final file.
-                string tempFile = Path.Combine(Path.GetTempPath(), imageName);
-                image.Save(tempFile);
-                var imageBytes = File.ReadAllBytes(tempFile);
-                File.Delete(tempFile);
-                await _blobStoreService.StoreBytes($"coveragetiles/{imageName}", imageBytes);
-                //File.WriteAllBytes($"c:\\temp\\{imageName}", imageBytes);
+                pixelsChanged.TryGetValue(imageName, out long pixelChangeCount);
+                if (pixelChangeCount > 0)
+                {
+                    // Have to use temp file since image.SaveAsPng somehow didn't get all pixels in the final file.
+                    string tempFile = Path.Combine(Path.GetTempPath(), imageName);
+                    image.Save(tempFile);
+                    var imageBytes = File.ReadAllBytes(tempFile);
+                    File.Delete(tempFile);
+                    await _blobStoreService.StoreBytes($"coveragetiles/{imageName}", imageBytes);
+                    //File.WriteAllBytes($"c:\\temp\\{imageName}", imageBytes);
+                    imageWriteCount++;
+                }
+                else
+                {
+                    imageSkipCount++;
+                }
             }
+
+            _logger.LogInformation($"Coverage images touched: {imageCache.Count}, written: {imageWriteCount}, skipped: {imageSkipCount}");
         }
     }
 }

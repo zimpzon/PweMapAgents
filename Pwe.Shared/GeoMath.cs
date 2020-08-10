@@ -56,6 +56,7 @@ namespace Pwe.Shared
                 if (h < 0) dy2 = -1; else if (h > 0) dy2 = 1;
                 dx2 = 0;
             }
+
             int numerator = longest >> 1;
             for (int i = 0; i <= longest; i++)
             {
