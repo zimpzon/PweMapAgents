@@ -144,8 +144,13 @@ namespace Pwe.MapAgents
 
             if (newPath.Points.Count == 0)
             {
-                newPath.Points.Add(new GeoCoord(agent.StartLon, agent.StartLat));
-                newPath.PointAbsTimestampMs.Add(pathUnixMs);
+                // Path is out of date, nothing to keep. Reuse latest known position
+                int oldCount = oldPath.Points.Count;
+                newPath.Points.Clear();
+                newPath.PointAbsTimestampMs.Clear();
+                newPath.Points.Add(oldPath.Points[oldCount - 1]);
+                newPath.Points.Add(oldPath.Points[oldCount - 1]);
+                newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
             }
 
             // Start path here
@@ -180,7 +185,12 @@ namespace Pwe.MapAgents
                     option.VisitedCount = visitedNodesFound;
                     option.TotalVisitCount = totalVisitCount;
                     option.UnvisitedPct = visitedNodesFound == 0 ? 100 : (double)unvisitedNodesFound / visitedNodesFound;
-                    option.Score = ((unvisitedNodesFound + visitedNodesFound) / ((double)totalVisitCount + 1)) + _rnd.NextDouble() * 0.1; // Add a little randomness
+
+                    // Absolute score - number of new nodes scores high.
+                    option.Score = unvisitedNodesFound + _rnd.Next(0, 5); // Add a little randomness
+
+                    // Percentage score - small dead ends scores high.
+                    //option.Score = ((unvisitedNodesFound + visitedNodesFound) / ((double)totalVisitCount + 1)) + _rnd.NextDouble() * 0.1; // Add a little randomness
                 }
 
                 // Scores should reflect the direction with the most unexplored nodes. Higher = better.
@@ -209,7 +219,10 @@ namespace Pwe.MapAgents
                     options = options.OrderByDescending(x => x.Score).ToList();
                 }
 
-                nextNode = options[0].Node;
+                // Most of the time select element 0, but sometimes randomly select another
+                int maxIdx = options.Count > 1 ? 1 : 0;
+                int selectedIdx = _rnd.NextDouble() < 0.75 ? 0 : _rnd.Next(0, maxIdx + 1);
+                nextNode = options[selectedIdx].Node;
                 prevNode = node;
                 node = nextNode;
                 prevBearing = GeoMath.CalculateBearing(prevNode.Point, node.Point);

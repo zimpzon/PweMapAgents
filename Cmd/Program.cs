@@ -28,6 +28,7 @@ namespace Cmd
             var tokens = Tokens.Create(config["TwitterConsumerKey"], config["TwitterConsumerSecret"], config["TwitterAccessToken"], config["TwitterAccessSecret"]);
 
             var blobs = services.GetRequiredService<IBlobStoreService>();
+            var world = services.GetRequiredService<IWorldGraph>();
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
             await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
