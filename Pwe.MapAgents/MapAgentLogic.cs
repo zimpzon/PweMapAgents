@@ -144,7 +144,7 @@ namespace Pwe.MapAgents
 
             if (newPath.Points.Count == 0)
             {
-                // Path is out of date, nothing to keep. Reuse latest known position
+                // Path is out of date, nothing to keep. Reuse latest known position.
                 int oldCount = oldPath.Points.Count;
                 newPath.Points.Clear();
                 newPath.PointAbsTimestampMs.Clear();
@@ -187,7 +187,7 @@ namespace Pwe.MapAgents
                     option.UnvisitedPct = visitedNodesFound == 0 ? 100 : (double)unvisitedNodesFound / visitedNodesFound;
 
                     // Absolute score - number of new nodes scores high.
-                    option.Score = unvisitedNodesFound + _rnd.Next(0, 5); // Add a little randomness
+                    option.Score = (unvisitedNodesFound - totalVisitCount) + _rnd.Next(0, 5); // Add a little randomness
 
                     // Percentage score - small dead ends scores high.
                     //option.Score = ((unvisitedNodesFound + visitedNodesFound) / ((double)totalVisitCount + 1)) + _rnd.NextDouble() * 0.1; // Add a little randomness
