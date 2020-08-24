@@ -136,11 +136,22 @@ namespace Pwe.MapAgents
                 }
             }
 
-            // Make sure all visited lines are drawn by adding the first kept point
-            if (newPath.Points.Count > 0)
+            // Make sure all visited lines are drawn by adding the points that are cut off.
+            if (newPath.Points.Count > 1)
+            {
                 visitedPoints.Add(newPath.Points[0]);
+                visitedPoints.Add(newPath.Points[1]);
+            }
 
             await _mapCoverage.UpdateCoverage(visitedPoints).ConfigureAwait(false);
+
+            {
+                // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
+                //newPath.Points.Clear();
+                //newPath.Points.Add(new GeoCoord(6.598364, 50.078052));
+                //newPath.PointAbsTimestampMs.Clear();
+                //newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
+            }
 
             if (newPath.Points.Count == 0)
             {
