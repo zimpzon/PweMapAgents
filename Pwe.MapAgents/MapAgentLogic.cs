@@ -147,10 +147,10 @@ namespace Pwe.MapAgents
 
             {
                 // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
-                newPath.Points.Clear();
-                newPath.Points.Add(new GeoCoord(6.598364, 50.078052));
-                newPath.PointAbsTimestampMs.Clear();
-                newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
+                //newPath.Points.Clear();
+                //newPath.Points.Add(new GeoCoord(6.598364, 50.078052));
+                //newPath.PointAbsTimestampMs.Clear();
+                //newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
             }
 
             if (newPath.Points.Count == 0)
