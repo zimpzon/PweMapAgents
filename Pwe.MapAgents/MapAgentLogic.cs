@@ -147,10 +147,12 @@ namespace Pwe.MapAgents
 
             {
                 // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
-                //newPath.Points.Clear();
-                //newPath.Points.Add(new GeoCoord(6.598364, 50.078052));
-                //newPath.PointAbsTimestampMs.Clear();
-                //newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
+                // 1.7141556,110.3603709
+                // Do not include this code block if publishing to Azure!
+                newPath.Points.Clear();
+                newPath.Points.Add(new GeoCoord(110.3603709, 1.7141556));
+                newPath.PointAbsTimestampMs.Clear();
+                newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
             }
 
             if (newPath.Points.Count == 0)
@@ -180,6 +182,14 @@ namespace Pwe.MapAgents
             while (true)
             {
                 conn = await _worldGraph.GetNodeConnections(node).ConfigureAwait(false);
+                // I have seen GetNodeConnections return the same node twice.
+                var d = conn.GroupBy(c => c.Id).Select(g => g.First()).ToList();
+                if (d.Count != conn.Count)
+                {
+                    _logger.LogWarning($"GetNodeConnections returned duplicates, fixed by group by");
+                    conn = d;
+                }
+
                 var options = conn.Select(x => new Option { Node = x }).ToList();
 
                 // Don't go back if we can go forward

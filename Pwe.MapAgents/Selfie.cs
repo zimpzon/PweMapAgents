@@ -60,8 +60,9 @@ namespace Pwe.MapAgents
             await _blobStoreService.StoreText(path, JsonSerializer.Serialize(dto)).ConfigureAwait(false);
         }
 
-        public async Task<bool> IsSelfiePending(int maxPerDay = 3)
+        public async Task<bool> IsSelfiePending()
         {
+            const int maxPerDay = 5;
             var dto = await GetSelfieDto().ConfigureAwait(false);
             if (!dto.NotBefore.HasValue)
             {
@@ -80,7 +81,7 @@ namespace Pwe.MapAgents
             dto.Count++;
             if (dto.NotBefore.HasValue)
             {
-                dto.NotBefore = dto.NotBefore.Value.AddHours(_rnd.NextDouble() * 3 + 1); // Add minimum hours before next selfie
+                dto.NotBefore = dto.NotBefore.Value.AddHours(_rnd.NextDouble() * 1 + 0.5); // Add minimum hours before next selfie
             }
             _logger.LogInformation($"Selfie marked taken, new count: {dto.Count}, next notBefore: {dto.NotBefore}");
             await SaveSelfieDto(dto).ConfigureAwait(false);

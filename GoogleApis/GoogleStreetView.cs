@@ -4,6 +4,7 @@ using Pwe.Shared;
 using System;
 using System.Globalization;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace GoogleApis
@@ -40,7 +41,8 @@ namespace GoogleApis
             var bytes = await httpRes.Content.ReadAsByteArrayAsync();
             if (bytes.Length < 1000)
             {
-                _logger.LogInformation($"Error getting StreetView image, bytes: {bytes.Length}");
+                string txt = Encoding.UTF8.GetString(bytes);
+                _logger.LogInformation($"Error getting StreetView image, bytes: {bytes.Length}, message: {txt}");
                 return null;
             }
 
