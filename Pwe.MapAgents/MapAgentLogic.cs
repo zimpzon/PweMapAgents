@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
-using Pwe.GeoJson;
 using Pwe.OverpassTiles;
 using Pwe.Shared;
 using Pwe.World;
@@ -27,6 +26,7 @@ namespace Pwe.MapAgents
         private readonly IGraphPeek _graphPeek;
         private readonly ILocationInformation _locationInformation;
         private readonly IConfiguration _configuration;
+        private readonly IPinning _pinning;
         private readonly Random _rnd = new Random();
 
         static readonly NumberFormatInfo nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
@@ -40,7 +40,8 @@ namespace Pwe.MapAgents
             ISelfie selfie,
             ILocationInformation locationInformation,
             IConfiguration configuration,
-            IGraphPeek graphPeek)
+            IGraphPeek graphPeek,
+            IPinning pinning)
         {
             _logger = logger;
             _worldGraph = worldGraph;
@@ -50,6 +51,7 @@ namespace Pwe.MapAgents
             _locationInformation = locationInformation;
             _configuration = configuration;
             _graphPeek = graphPeek;
+            _pinning = pinning;
         }
 
         //var ag = new MapAgent
@@ -145,14 +147,27 @@ namespace Pwe.MapAgents
 
             await _mapCoverage.UpdateCoverage(visitedPoints).ConfigureAwait(false);
 
+            // The following code block places the agent at a hardcoded point.
             {
                 // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
-                // 1.7141556,110.3603709
+                // 47.609352,-122.3419811
                 // Do not include this code block if publishing to Azure!
+                var newStartPoint = new GeoCoord(-122.3419811, 47.609352);
                 newPath.Points.Clear();
-                newPath.Points.Add(new GeoCoord(110.3603709, 1.7141556));
+                newPath.Points.Add(newStartPoint);
                 newPath.PointAbsTimestampMs.Clear();
                 newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
+                var newPin = new Pin
+                {
+                    Center = newStartPoint,
+                    TimeoutUtc = DateTime.UtcNow.AddHours(10),
+                    SelfiesLeft = 5,
+                    NextSelfieTimeUtc = DateTime.UtcNow.AddMinutes(3), // Make sure first selfie is in next update, not this one (selfie uses the previous path, not the one generated now).
+                    MaxDistanceMeters = 500,
+                    MaxTimeBetweenSelfies = TimeSpan.FromMinutes(10),
+                    MinTimeBetweenSelfies = TimeSpan.FromMinutes(5),
+                };
+                await _pinning.StorePinning(newPin).ConfigureAwait(false);
             }
 
             if (newPath.Points.Count == 0)
@@ -179,18 +194,30 @@ namespace Pwe.MapAgents
             WayTileNode node = startNode;
             WayTileNode nextNode = null;
 
+            var pin = await _pinning.GetCurrentPinning().ConfigureAwait(false);
+
             while (true)
             {
                 conn = await _worldGraph.GetNodeConnections(node).ConfigureAwait(false);
-                // I have seen GetNodeConnections return the same node twice.
-                var d = conn.GroupBy(c => c.Id).Select(g => g.First()).ToList();
-                if (d.Count != conn.Count)
+
+                // I have seen GetNodeConnections return the same node twice, remove duplicates.
+                var grouped = conn.GroupBy(c => c.Id).Select(g => g.First()).ToList();
+                if (grouped.Count != conn.Count)
                 {
-                    _logger.LogWarning($"GetNodeConnections returned duplicates, fixed by group by");
-                    conn = d;
+                    _logger.LogWarning($"GetNodeConnections returned duplicates, removed (count before: {conn.Count}, count after: {grouped.Count})");
+                    conn = grouped;
                 }
 
                 var options = conn.Select(x => new Option { Node = x }).ToList();
+                if (pin != null)
+                {
+                    // Remove options that are too far away from pinning point.
+                    int countBefore = options.Count;
+                    options = options.Where(o => GeoMath.MetersDistanceTo(pin.Center, o.Node.Point) <= pin.MaxDistanceMeters).ToList();
+                    int countAfter = options.Count;
+                    if (countAfter != countBefore)
+                        _logger.LogInformation($"Removed {countBefore - countAfter} node connection(s) too far away from pinning");
+                }
 
                 // Don't go back if we can go forward
                 if (options.Count > 1)
@@ -293,7 +320,15 @@ namespace Pwe.MapAgents
             string clientPathJson = JsonSerializer.Serialize(clientPath);
             await _blobStoreService.StoreText(BuildClientPathPath(agentId), clientPathJson, overwriteExisting: true).ConfigureAwait(false);
 
-            await TryTakeSelfie(oldPath.Points).ConfigureAwait(false);
+            if (pin != null)
+            {
+                await TryTakePinnedSelfie(oldPath.Points, pin).ConfigureAwait(false);
+                await _pinning.StorePinning(pin).ConfigureAwait(false);
+            }
+            else
+            {
+                await TryTakeSelfie(oldPath.Points).ConfigureAwait(false);
+            }
         }
 
         async Task TryTakeSelfie(List<GeoCoord> path)
@@ -313,6 +348,28 @@ namespace Pwe.MapAgents
                 await PostToTwitter(image, message, location).ConfigureAwait(false);
 
                 await _selfie.MarkPendingSelfieTaken().ConfigureAwait(false);
+            }
+        }
+
+        async Task TryTakePinnedSelfie(List<GeoCoord> path, Pin pin)
+        {
+            if (DateTime.UtcNow > pin.NextSelfieTimeUtc)
+            {
+                var (image, location) = await _selfie.Take(path).ConfigureAwait(false);
+                if (image == null || location == null)
+                {
+                    _logger.LogInformation("No selfie returned from selfie service, aborting");
+                    return;
+                }
+
+                string imageInfo = await _locationInformation.GetInformation(location).ConfigureAwait(false);
+                string mapUrl = $"https://www.google.com/maps/search/?api=1&query={NumberStr(location.Lat)},{NumberStr(location.Lon)}";
+                string message = $"{imageInfo}\n{mapUrl}";
+                await PostToTwitter(image, message, location).ConfigureAwait(false);
+
+                var delaySeconds = _rnd.Next((int)pin.MinTimeBetweenSelfies.TotalSeconds, (int)pin.MaxTimeBetweenSelfies.TotalSeconds);
+                pin.NextSelfieTimeUtc = DateTime.UtcNow.AddSeconds(delaySeconds);
+                pin.SelfiesLeft -= 1;
             }
         }
 

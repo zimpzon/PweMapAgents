@@ -7,14 +7,10 @@ using Pwe.AzureBloBStore;
 using Pwe.GeoJson;
 using Pwe.MapAgents;
 using Pwe.OverpassTiles;
-using Pwe.Shared;
 using Pwe.World;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Cmd
@@ -94,6 +90,7 @@ namespace Cmd
             services.AddTransient<IMapCoverage, MapCoverage>();
             services.AddTransient<IGraphPeek, GraphPeek>();
             services.AddTransient<IPlaces, GooglePlaces>();
+            services.AddTransient<IPinning, Pinning>();
         }
     }
 }
