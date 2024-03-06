@@ -13,7 +13,7 @@
     <ProjectReference Include="..\Pwe.AzureBloBStore\Pwe.AzureBlobStore.csproj" />
     <ProjectReference Include="..\pwe.OverpassTiles\Pwe.OverpassTiles.csproj" />
     <ProjectReference Include="..\Pwe.Shared\Pwe.Shared.csproj" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-rc0003" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.7" />
   </ItemGroup>
 
 </Project>
