@@ -150,9 +150,9 @@ namespace Pwe.MapAgents
             // The following code block places the agent at a hardcoded point.
             {
                 // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
-                // 47.609352,-122.3419811
+                // 55.6336876,37.5789257
                 // Do not include this code block if publishing to Azure!
-                var newStartPoint = new GeoCoord(-122.3419811, 47.609352);
+                var newStartPoint = new GeoCoord(5.92891, 52.94243);
                 newPath.Points.Clear();
                 newPath.Points.Add(newStartPoint);
                 newPath.PointAbsTimestampMs.Clear();
@@ -160,12 +160,12 @@ namespace Pwe.MapAgents
                 var newPin = new Pin
                 {
                     Center = newStartPoint,
-                    TimeoutUtc = DateTime.UtcNow.AddHours(10),
-                    SelfiesLeft = 5,
+                    TimeoutUtc = DateTime.UtcNow.AddHours(4),
+                    SelfiesLeft = 10,
                     NextSelfieTimeUtc = DateTime.UtcNow.AddMinutes(3), // Make sure first selfie is in next update, not this one (selfie uses the previous path, not the one generated now).
-                    MaxDistanceMeters = 500,
-                    MaxTimeBetweenSelfies = TimeSpan.FromMinutes(10),
-                    MinTimeBetweenSelfies = TimeSpan.FromMinutes(5),
+                    MaxDistanceMeters = 1000,
+                    MinTimeBetweenSelfies = TimeSpan.FromMinutes(20),
+                    MaxTimeBetweenSelfies = TimeSpan.FromMinutes(30),
                 };
                 await _pinning.StorePinning(newPin).ConfigureAwait(false);
             }
@@ -269,7 +269,7 @@ namespace Pwe.MapAgents
 
                 // Most of the time select element 0, but sometimes randomly select another
                 int maxIdx = options.Count > 1 ? 1 : 0;
-                int selectedIdx = _rnd.NextDouble() < 0.75 ? 0 : _rnd.Next(0, maxIdx + 1);
+                int selectedIdx = _rnd.NextDouble() < 0.95 ? 0 : _rnd.Next(0, maxIdx + 1);
                 nextNode = options[selectedIdx].Node;
                 prevNode = node;
                 node = nextNode;

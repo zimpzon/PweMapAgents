@@ -3,7 +3,7 @@
 namespace Pwe.Shared
 {
     /// <summary>
-    /// Pinning ends when EndTime is reached or there are no more selfies to take (on some locations there are no street view images for selfies)
+    /// Pinning ends when TimeoutUtc is reached or there are no more selfies to take (on some locations there are no street view images for selfies)
     /// </summary>
     public class Pin
     {
