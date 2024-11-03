@@ -1,5 +1,5 @@
-﻿using GoogleApis;
-using Microsoft.Extensions.Configuration;
+﻿using Discord.WebSocket;
+using GoogleApis;
 using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
 using Pwe.OverpassTiles;
@@ -25,7 +25,6 @@ namespace Pwe.MapAgents
         private readonly ISelfie _selfie;
         private readonly IGraphPeek _graphPeek;
         private readonly ILocationInformation _locationInformation;
-        private readonly IConfiguration _configuration;
         private readonly IPinning _pinning;
         private readonly Random _rnd = new Random();
 
@@ -39,7 +38,6 @@ namespace Pwe.MapAgents
             IMapCoverage mapCoverage,
             ISelfie selfie,
             ILocationInformation locationInformation,
-            IConfiguration configuration,
             IGraphPeek graphPeek,
             IPinning pinning)
         {
@@ -49,7 +47,6 @@ namespace Pwe.MapAgents
             _mapCoverage = mapCoverage;
             _selfie = selfie;
             _locationInformation = locationInformation;
-            _configuration = configuration;
             _graphPeek = graphPeek;
             _pinning = pinning;
         }
@@ -148,26 +145,32 @@ namespace Pwe.MapAgents
             await _mapCoverage.UpdateCoverage(visitedPoints).ConfigureAwait(false);
 
             // The following code block places the agent at a hardcoded point.
+            // Do not include this code block if publishing to Azure! It is used when running Cmd locally, to move to a new location etc.
             {
                 // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
                 // 55.6336876,37.5789257
-                // Do not include this code block if publishing to Azure!
                 var newStartPoint = new GeoCoord(5.92891, 52.94243);
                 newPath.Points.Clear();
                 newPath.Points.Add(newStartPoint);
                 newPath.PointAbsTimestampMs.Clear();
                 newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
-                var newPin = new Pin
+
+                const bool SetPinning = true;
+                if (SetPinning)
                 {
-                    Center = newStartPoint,
-                    TimeoutUtc = DateTime.UtcNow.AddHours(4),
-                    SelfiesLeft = 10,
-                    NextSelfieTimeUtc = DateTime.UtcNow.AddMinutes(3), // Make sure first selfie is in next update, not this one (selfie uses the previous path, not the one generated now).
-                    MaxDistanceMeters = 1000,
-                    MinTimeBetweenSelfies = TimeSpan.FromMinutes(20),
-                    MaxTimeBetweenSelfies = TimeSpan.FromMinutes(30),
-                };
-                await _pinning.StorePinning(newPin).ConfigureAwait(false);
+                    var newPin = new Pin
+                    {
+                        // manually set configuration for pinning, if any
+                        Center = newStartPoint,
+                        TimeoutUtc = DateTime.UtcNow.AddHours(4),
+                        SelfiesLeft = 10,
+                        NextSelfieTimeUtc = DateTime.UtcNow.AddMinutes(3), // Make sure first selfie is in next update, not this one (selfie uses the previous path, not the one generated now).
+                        MaxDistanceMeters = 1000,
+                        MinTimeBetweenSelfies = TimeSpan.FromMinutes(20),
+                        MaxTimeBetweenSelfies = TimeSpan.FromMinutes(30),
+                    };
+                    await _pinning.StorePinning(newPin).ConfigureAwait(false);
+                }
             }
 
             if (newPath.Points.Count == 0)
@@ -345,7 +348,7 @@ namespace Pwe.MapAgents
                 string imageInfo = await _locationInformation.GetInformation(location).ConfigureAwait(false);
                 string mapUrl = $"https://www.google.com/maps/search/?api=1&query={NumberStr(location.Lat)},{NumberStr(location.Lon)}";
                 string message = $"{imageInfo}\n{mapUrl}";
-                await PostToTwitter(image, message, location).ConfigureAwait(false);
+                await PostToDiscord(image, message, location).ConfigureAwait(false);
 
                 await _selfie.MarkPendingSelfieTaken().ConfigureAwait(false);
             }
@@ -365,7 +368,7 @@ namespace Pwe.MapAgents
                 string imageInfo = await _locationInformation.GetInformation(location).ConfigureAwait(false);
                 string mapUrl = $"https://www.google.com/maps/search/?api=1&query={NumberStr(location.Lat)},{NumberStr(location.Lon)}";
                 string message = $"{imageInfo}\n{mapUrl}";
-                await PostToTwitter(image, message, location).ConfigureAwait(false);
+                await PostToDiscord(image, message, location).ConfigureAwait(false);
 
                 var delaySeconds = _rnd.Next((int)pin.MinTimeBetweenSelfies.TotalSeconds, (int)pin.MaxTimeBetweenSelfies.TotalSeconds);
                 pin.NextSelfieTimeUtc = DateTime.UtcNow.AddSeconds(delaySeconds);
@@ -373,16 +376,13 @@ namespace Pwe.MapAgents
             }
         }
 
-        async Task PostToTwitter(Image image, string message, GeoCoord location)
+        private async Task PostToDiscord(Image image, string message, GeoCoord location)
         {
             using var memStream = new MemoryStream();
             image.SaveAsPng(memStream);
             memStream.Position = 0;
 
-            var tokens = CoreTweet.Tokens.Create(_configuration["TwitterConsumerKey"], _configuration["TwitterConsumerSecret"], _configuration["TwitterAccessToken"], _configuration["TwitterAccessSecret"]);
-            var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
-            var media = new List<long> { uploadResult.MediaId };
-            await tokens.Statuses.UpdateAsync(message, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
+            var client = new DiscordSocketClient();
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using CoreTweet;
-using GoogleApis;
+﻿using GoogleApis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,21 +14,21 @@ using System.Threading.Tasks;
 
 namespace Cmd
 {
-    class Program
+    static class Program
     {
         static async Task Main(string[] _)
         {
             var services = BuildServiceProvider();
-            var config = services.GetRequiredService<IConfiguration>();
-            var tokens = Tokens.Create(config["TwitterConsumerKey"], config["TwitterConsumerSecret"], config["TwitterAccessToken"], config["TwitterAccessSecret"]);
+            //var config = services.GetRequiredService<IConfiguration>();
 
-            var blobs = services.GetRequiredService<IBlobStoreService>();
-            var world = services.GetRequiredService<IWorldGraph>();
+            //var blobs = services.GetRequiredService<IBlobStoreService>();
+            //var world = services.GetRequiredService<IWorldGraph>();
 
             var agents = services.GetRequiredService<IMapAgentLogic>();
             await agents.UpdateAgent("1", AgentCommand.Continue).ConfigureAwait(false);
             return;
 
+            // run the following to test selfies:
             var path = await agents.GetPath("1").ConfigureAwait(false);
 
             var selfies = services.GetRequiredService<ISelfie>();
@@ -45,10 +44,7 @@ namespace Cmd
                     var memStream = new MemoryStream();
                     image.SaveAsPng(memStream);
                     memStream.Position = 0;
-
-                    //var uploadResult = await tokens.Media.UploadAsync(memStream).ConfigureAwait(false);
-                    //var media = new List<long> { uploadResult.MediaId };
-                    //await tokens.Statuses.UpdateAsync(info, null, null, location.Lat, location.Lon, null, true, null, media).ConfigureAwait(false);
+                    // This used to post to Twitter, nothing happens now. Save to a file or whatever.
                 }
             }
 

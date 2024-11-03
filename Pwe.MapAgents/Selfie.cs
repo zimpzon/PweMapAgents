@@ -30,7 +30,6 @@ namespace Pwe.MapAgents
         class OutfitPaths
         {
             public List<string> Sunglasses { get; set; }
-            public List<string> Facemask { get; set; }
             public List<string> Default { get; set; }
         }
 
@@ -95,7 +94,6 @@ namespace Pwe.MapAgents
             var outfitPaths = new OutfitPaths
             {
                 Sunglasses = outfits.Where(o => o.Contains("glasses", StringComparison.InvariantCultureIgnoreCase)).ToList(),
-                Facemask = outfits.Where(o => o.Contains("facemask", StringComparison.InvariantCultureIgnoreCase)).ToList(),
                 Default = outfits.Where(o => !o.Contains("_", StringComparison.InvariantCultureIgnoreCase)).ToList(),
             };
 
@@ -128,10 +126,7 @@ namespace Pwe.MapAgents
             }
             else
             {
-                if (_rnd.NextDouble() < 0.1)
-                    path = outfitPaths.Facemask[0];
-                else
-                    path = outfitPaths.Default[0];
+                path = outfitPaths.Default[0];
             }
             _logger.LogInformation($"Selfie outfit chosen: {path}, agentLuminance: {agentLuminance}");
 

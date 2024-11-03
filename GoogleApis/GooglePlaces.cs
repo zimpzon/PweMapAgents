@@ -10,7 +10,6 @@ namespace GoogleApis
     public class GooglePlaces : IPlaces
     {
         static readonly NumberFormatInfo nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
-        static string NumberStr(double d) => d.ToString(nfi);
 
         private readonly ILogger _logger;
         private readonly string _apiKey;
