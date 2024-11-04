@@ -1,5 +1,7 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using GoogleApis;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Pwe.AzureBloBStore;
 using Pwe.OverpassTiles;
@@ -12,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pwe.MapAgents
@@ -19,6 +22,7 @@ namespace Pwe.MapAgents
     public class MapAgentLogic : IMapAgentLogic
     {
         private readonly ILogger _logger;
+        private readonly IConfiguration _configuration;
         private readonly IWorldGraph _worldGraph;
         private readonly IBlobStoreService _blobStoreService;
         private readonly IMapCoverage _mapCoverage;
@@ -33,6 +37,7 @@ namespace Pwe.MapAgents
 
         public MapAgentLogic(
             ILogger logger,
+            IConfiguration configuration,
             IWorldGraph worldGraph,
             IBlobStoreService blobStoreService,
             IMapCoverage mapCoverage,
@@ -42,6 +47,7 @@ namespace Pwe.MapAgents
             IPinning pinning)
         {
             _logger = logger;
+            _configuration = configuration;
             _worldGraph = worldGraph;
             _blobStoreService = blobStoreService;
             _mapCoverage = mapCoverage;
@@ -146,32 +152,32 @@ namespace Pwe.MapAgents
 
             // The following code block places the agent at a hardcoded point.
             // Do not include this code block if publishing to Azure! It is used when running Cmd locally, to move to a new location etc.
-            {
-                // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
-                // 55.6336876,37.5789257
-                var newStartPoint = new GeoCoord(5.92891, 52.94243);
-                newPath.Points.Clear();
-                newPath.Points.Add(newStartPoint);
-                newPath.PointAbsTimestampMs.Clear();
-                newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
+#if DEBUG
+            // If stuck, clear newPath and add a single point at or near a valid location. Then run update once from Cmd. A new valid path should now be written.
+            // 55.6336876,37.5789257
+            var newStartPoint = new GeoCoord(5.92891, 52.94243);
+            newPath.Points.Clear();
+            newPath.Points.Add(newStartPoint);
+            newPath.PointAbsTimestampMs.Clear();
+            newPath.PointAbsTimestampMs.Add(GeoMath.UnixMs());
 
-                const bool SetPinning = true;
-                if (SetPinning)
+            const bool SetPinning = true;
+            if (SetPinning)
+            {
+                var newPin = new Pin
                 {
-                    var newPin = new Pin
-                    {
-                        // manually set configuration for pinning, if any
-                        Center = newStartPoint,
-                        TimeoutUtc = DateTime.UtcNow.AddHours(4),
-                        SelfiesLeft = 10,
-                        NextSelfieTimeUtc = DateTime.UtcNow.AddMinutes(3), // Make sure first selfie is in next update, not this one (selfie uses the previous path, not the one generated now).
-                        MaxDistanceMeters = 1000,
-                        MinTimeBetweenSelfies = TimeSpan.FromMinutes(20),
-                        MaxTimeBetweenSelfies = TimeSpan.FromMinutes(30),
-                    };
-                    await _pinning.StorePinning(newPin).ConfigureAwait(false);
-                }
+                    // manually set configuration for pinning, if any
+                    Center = newStartPoint,
+                    TimeoutUtc = DateTime.UtcNow.AddHours(4),
+                    SelfiesLeft = 10,
+                    NextSelfieTimeUtc = DateTime.UtcNow.AddMinutes(3), // Make sure first selfie is in next update, not this one (selfie uses the previous path, not the one generated now).
+                    MaxDistanceMeters = 1000,
+                    MinTimeBetweenSelfies = TimeSpan.FromMinutes(20),
+                    MaxTimeBetweenSelfies = TimeSpan.FromMinutes(30),
+                };
+                await _pinning.StorePinning(newPin).ConfigureAwait(false);
             }
+#endif
 
             if (newPath.Points.Count == 0)
             {
@@ -347,8 +353,7 @@ namespace Pwe.MapAgents
 
                 string imageInfo = await _locationInformation.GetInformation(location).ConfigureAwait(false);
                 string mapUrl = $"https://www.google.com/maps/search/?api=1&query={NumberStr(location.Lat)},{NumberStr(location.Lon)}";
-                string message = $"{imageInfo}\n{mapUrl}";
-                await PostToDiscord(image, message, location).ConfigureAwait(false);
+                await PostToDiscord(image, imageInfo, mapUrl, location).ConfigureAwait(false);
 
                 await _selfie.MarkPendingSelfieTaken().ConfigureAwait(false);
             }
@@ -367,8 +372,7 @@ namespace Pwe.MapAgents
 
                 string imageInfo = await _locationInformation.GetInformation(location).ConfigureAwait(false);
                 string mapUrl = $"https://www.google.com/maps/search/?api=1&query={NumberStr(location.Lat)},{NumberStr(location.Lon)}";
-                string message = $"{imageInfo}\n{mapUrl}";
-                await PostToDiscord(image, message, location).ConfigureAwait(false);
+                await PostToDiscord(image, imageInfo, mapUrl, location).ConfigureAwait(false);
 
                 var delaySeconds = _rnd.Next((int)pin.MinTimeBetweenSelfies.TotalSeconds, (int)pin.MaxTimeBetweenSelfies.TotalSeconds);
                 pin.NextSelfieTimeUtc = DateTime.UtcNow.AddSeconds(delaySeconds);
@@ -376,13 +380,33 @@ namespace Pwe.MapAgents
             }
         }
 
-        private async Task PostToDiscord(Image image, string message, GeoCoord location)
+        private async Task PostToDiscord(SixLabors.ImageSharp.Image image, string locationInfo, string mapLink, GeoCoord location)
         {
             using var memStream = new MemoryStream();
             image.SaveAsPng(memStream);
             memStream.Position = 0;
 
-            var client = new DiscordSocketClient();
+            var discordClient = new DiscordSocketClient();
+            var discordAwaiter = new ManualResetEvent(initialState: false);
+
+            string botToken = _configuration["DiscordBotToken"];
+
+            discordClient.Ready += async () =>
+            {
+                ulong targetChannelId = ulong.Parse(_configuration["DiscordTargetChannelId"]);
+
+                var channel = await discordClient.GetChannelAsync(targetChannelId) as IMessageChannel;
+                await channel.SendFileAsync(memStream, "image.png", $"Greetings from {locationInfo} :smiley:\n\nWatch me live here: https://maps0pwe0sa.z16.web.core.windows.net\n\n{mapLink}");
+
+                // Allow main thread to continue now that we are done posting to Discord.
+                discordAwaiter.Set();
+            };
+
+            await discordClient.LoginAsync(TokenType.Bot, botToken);
+            await discordClient.StartAsync();
+
+            // Add a timeout waiting for Discord so we will not wait until the function app timeout which will cost a furtune.
+            discordAwaiter.WaitOne(timeout: TimeSpan.FromSeconds(20));
         }
     }
 }

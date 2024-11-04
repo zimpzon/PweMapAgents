@@ -136,8 +136,8 @@ namespace Pwe.MapAgents
 
         async Task<Image> Apply(byte[] pictureBytes, OutfitPaths outfitPaths)
         {
-            Image<Rgba32> dstImg = Image.Load(pictureBytes);
-            var dstSize = dstImg.Size();
+            Image<Rgba32> dstImg = Image.Load<Rgba32>(pictureBytes);
+            var dstSize = dstImg.Size;
 
             // Get average luminance for the area around agent
             var agentArea = new Rectangle(Pct(dstSize.Width, 0.35), Pct(dstSize.Height, 0.8), Pct(dstSize.Width, 0.3), Pct(dstSize.Height, 0.2));
@@ -149,7 +149,7 @@ namespace Pwe.MapAgents
             var agentBytes = await GetOutfitBytes(lum, outfitPaths).ConfigureAwait(false);
 
             var cactusImg = Image.Load(agentBytes);
-            var srcSize = cactusImg.Size();
+            var srcSize = cactusImg.Size;
 
             int agentRotation = _rnd.Next(20) - 10;
             cactusImg.Mutate(x => x.Rotate(agentRotation));
