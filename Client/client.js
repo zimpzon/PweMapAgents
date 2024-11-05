@@ -25,7 +25,7 @@ function init()
     L.imageOverlay(imageUrl, imageBounds).addTo(mymap).on('error', function (e) { console.log(e) });
     L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-        maxZoom: 17,
+        maxZoom: 18,
         id: 'OSM'
     }).addTo(mymap);
     mymap.on("zoomstart", function (e) { isZooming = true; });

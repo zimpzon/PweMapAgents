@@ -23,7 +23,7 @@ namespace Pwe.World
         public async Task UpdateCoverage(List<GeoCoord> points)
         {
             const int LayerMin = 0;
-            const int LayerMax = 19;
+            const int LayerMax = 18;
 
             Dictionary<string, Image<Rgba32>> imageCache = new Dictionary<string, Image<Rgba32>>();
             Dictionary<string, long> pixelsChanged = new Dictionary<string, long>();
